@@ -46,6 +46,7 @@ KEY_GUIDE = (
     "Left Mouse ..... Shoot\n"
     "Right Mouse / F  Melee\n"
     "C .............. Slide\n"
+    "SPACE .......... Wall Jump (in a wall-run)\n"
     "L-SHIFT ........ Bullet Time\n"
     "R .............. Reload\n"
     "ESC ............ Pause / Quit"
