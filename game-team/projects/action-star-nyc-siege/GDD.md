@@ -26,6 +26,45 @@ Navigate through levels, engage in combat using shooting and melee skills, utili
 - Health system with regeneration over time or through pickups.
 - Stealth elements to avoid detection by enemies.
 
+## 6b. The Protagonist — The Action Star (official fiction, Cyrus 2026-10-27)
+
+**Who he is.** The player character is **The Action Star**: a
+professional stunt actor auditioning for the lead role in the biggest
+action film of the year, shooting in New York City. He is not a
+soldier and this is not a war — it is the most important audition of
+his life.
+
+**The fiction of play.** Every floor of the tower is a **live take**
+on a working film set: the lobby, the data center and the penthouse
+are dressed stages; the guards are fellow performers playing the
+scene; the elevator ride between floors is the reset between takes.
+Nothing the player does is "combat" inside the fiction — it is a
+performance, judged as one.
+
+**The Director.** An unseen Director watches every take and grades it
+with the Final Take Rating of §7c — S "Perfect Take", A "Box Office
+Hit", B "Good Take", C "Wrap Scene", F "Re-take Required". The ranks
+are not military grades; they are a director's verdicts on a take.
+
+**Motivation.** Win the role. The Action Star earns it the only way a
+stunt performer can: a flawless, fast, spectacular take — clean
+shooting, acrobatic stunts (Bullet Dodge, Slide & Shoot, Air Takedown,
+Wall-Run Kill), and the clock beaten. Impress the Director. Earn
+your S.
+
+**Look.** Classic Hollywood action, combined inspirations (John Wick,
+Mission: Impossible, Broforce): dark tactical clothing — near-black
+jacket and trousers with a vest plate — fingerless gloves, and a
+holster strapped to each thigh. In code this is `character_model.py`:
+a stylized humanoid built from primitives (v1, not a rigged asset)
+with poses for idle, run, aim, slide, melee, wall-run and the
+Bullet-Time dodge.
+
+**Mechanics that serve the fiction.** Bullet Time is the performer's
+signature move — the slow-motion stunt beat. The Stunt Matrix (§7b)
+scores showmanship, not body count; the Time-Attack clock (§10) is
+the audition's time limit; a failed take (F) is simply re-shot.
+
 ## 7. Scoring System
 Final Take Rating = Base Time Bonus + Stunt Score. Base Time Bonus: Points awarded for time remaining under the stage time cap. Stunt Matrix: Bullet Dodge +50, Slide & Shoot +100, Air Takedown +150, Wall-Run Kill +200. Multi-Kill Combo: 3 kills within 2 seconds earns a multiplier from x2 up to x5. Combo/diversity rule: each unique stunt action raises the combo multiplier by +0.5, capped at 5.0; points added = base points x current multiplier; combo resets when the player takes a hit. Ranks: S (1000+), A (800-999), B (600-799), C (400-599), F (<400).
 
