@@ -31,6 +31,19 @@ from typing import Any
 
 logger = logging.getLogger("game_developer_agent")
 
+# Load .env files (this folder first, then the cyrus-agents repo
+# root) so AGENT_API_KEY / AGENT_MODEL can live in a local,
+# never-committed .env. Guarded: python-dotenv is declared in
+# requirements.txt, but this module must import cleanly without it.
+try:
+    from dotenv import load_dotenv
+
+    _here = os.path.dirname(os.path.abspath(__file__))
+    load_dotenv(os.path.join(_here, ".env"))
+    load_dotenv(os.path.join(_here, "..", "..", ".env"))
+except Exception:
+    pass
+
 RETRY_DELAYS = (2, 5)
 DEFAULT_MODEL = "gpt-4o"
 
