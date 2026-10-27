@@ -64,7 +64,13 @@ OUTPUT FORMAT (Must be in Markdown):
 [Provide refactored code blocks if applicable]
 """
 
-    user_prompt = f"Please review the following code changes carefully:\n\n{code_changes}"
+    pr_title = pr.title or ""
+    pr_body = pr.body or ""
+    user_prompt = (
+        f"PR title: {pr_title}\n"
+        f"PR description: {pr_body}\n\n"
+        f"Changes:\n{code_changes}"
+    )
 
     # ۵. ارتباط با OpenAI برای تحلیل هوشمند
     print("🧠 Super Brain is analyzing the code...")
