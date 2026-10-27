@@ -1,45 +1,61 @@
-# Cyrus Game Team 🎮 — تیم ایجنت‌های بازی سایرس
+# Cyrus Game Studio 🎮 — استودیوی بازی‌سازی سایرس
 
-This is the **game wing** of the Cyrus agent house (`solicyrus/cyrus-agents`).
-It was built on 2026-10-27 at the owner's order: first the agent team is set
-up and proven, then game work begins.
+This is the **game studio** inside the Cyrus agent house
+(`solicyrus/cyrus-agents`). It was restructured on 2026-10-27 to match the
+boss's **Game Studio Charter**: an independent, super-smart game studio
+whose one job is turning the raw idea in the boss's head into a complete,
+real game — working code, optimized, with **zero hallucinated or
+incomplete code**.
 
-## How the team works (the manager model)
+## The studio model
 
-- **Owner — Cyrus.** He gives the ideas, the program, and the approvals.
-- **Manager — Cyrus (the assistant).** He assigns the work, checks every
-  result, and brings only verified results back to the owner.
-- **Agents — the workers below.** Each one has one job, written in its
-  `AGENT.md`. An agent's AGENT.md is its constitution: if a report and the
-  AGENT.md disagree, the AGENT.md wins.
+- **Boss — Cyrus.** He owns the idea and the decisions. Nothing public,
+  paid, or irreversible happens without his word.
+- **Manager — Cyrus (the assistant).** He runs the studio day to day:
+  carries the boss's answers to the agents, assigns the work, checks
+  every result, and brings only verified results back to the boss.
+- **Three senior agents — the specialists below.** Each has one job,
+  written in its `AGENT.md` (its دستور / constitution). If a report and
+  the AGENT.md disagree, the AGENT.md wins.
 
 ## The roster
 
-| Agent | Folder | Job (one line) |
-|---|---|---|
-| 🎮 Game Builder | `game-builder/` | Writes and fixes the game's code, step by step, and proves each change with tests. |
-| 🔎 Game Reviewer | `game-reviewer/` | Reads every game code change (Pull Request) and reports bugs, risks, and quality problems. |
-| 🧪 Game Tester | `game-tester/` | Runs the game's checks (tests, syntax, engine check) and reports PASS / FAIL honestly — it never fixes. |
+| # | Agent | Folder | Job (one line) |
+|---|---|---|---|
+| 1 | 🎬 **The Visionary Director** | `game-director/` | Interviews the boss to extract the raw idea; designs mechanics, rules, physics, and story; writes the Game Design Document. |
+| 2 | 🏗️ **The Lead Architect** | `game-architect/` | Recommends the engine (Unity, Godot, or web JS), then writes clean, modular, 100% runnable code — file by file, complete. |
+| 3 | 🧪 **The QA Destroyer** | `game-qa/` | Reviews the Architect's code line by line, hunts bugs, leaks, and performance problems, runs the tests — and rejects bad work before the boss ever sees it. |
 
-The Game Builder and Game Reviewer are game-tuned copies of the house
-Code Agent and Super Brain — same proven engines, game دستور. The Game
-Tester is a new deterministic agent (no AI brain, like the Tour Guardian):
-plain code, plain evidence, zero cost per run.
+The Architect runs the house Code Agent engine and the QA Destroyer
+carries the house Super Brain reviewer plus the deterministic tester —
+the proven house packages, game-tuned, with one studio upgrade: their
+OpenAI calls retry with backoff instead of dying on a rate limit.
 
-## The quality gate (house rule)
+## The charter — hard rules
 
-- **No agent works unproven.** Every agent first passes a small real
-  **trial task** that the manager inspects.
-- **The manager reviews everything.** Agent work lands as Pull Requests /
-  reports — never directly on the live game.
-- **Nothing goes live directly.** No publishing, no payments, nothing
-  irreversible without the owner's approval, relayed through the manager.
-- **Honest, with evidence.** An honest FAIL always beats a false PASS.
+1. **Step by step.** Never the whole game in one message. One stage at a
+   time, verified before the next begins.
+2. **The Director interviews FIRST.** The raw idea is extracted with
+   precise questions and written into the GDD before anything is built.
+   **No GDD, no code** — the Architect never codes without an approved
+   roadmap.
+3. **Zero hallucination.** Every fact, asset, and API is confirmed or it
+   is flagged as an open question. Code must run as-is.
+4. **Complete code only.** Placeholder code (`// Add logic here`, stubs,
+   empty functions) is absolutely forbidden. Every function is fully
+   written.
+5. **The QA gate.** The QA Destroyer reviews the Architect's code line by
+   line and can reject it back for fixes. The boss sees code only after
+   it passes QA and the manager's review.
+6. **Every report ends with the stage + the next step.** Where we are,
+   and what happens next — always.
 
 ## Status
 
-**Installed, dormant.** The Builder and Reviewer wake only when the OpenAI
-key is added as a GitHub repository secret (the same arrangement as the
-house agents: `AGENT_API_KEY` for the Builder, `OPENAI_API_KEY` for the
-Reviewer). The Tester needs no key and can be run by the manager at any
-time. No game has been chosen yet — team first, game choice after.
+**Installed, dormant.** The Director, the Architect, and the QA
+Destroyer's AI reviewer wake when the manager activates the studio (the
+OpenAI key added as a GitHub repository secret — the same arrangement as
+the house agents: `AGENT_API_KEY` for the Architect, `OPENAI_API_KEY`
+for the reviewer). The QA tester's deterministic half needs no key and
+has already passed its proof runs. **No game has been chosen yet** —
+studio first, the boss's idea interview comes next.
