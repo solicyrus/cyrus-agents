@@ -421,6 +421,7 @@ class FloorSession:
         self.player = PlayerController(self.world, run_state.stunt,
                                        self.hud,
                                        spawn=FLOOR_SPAWNS[level_num])
+        self.player.camera_rig = self.camera_rig   # OTS aim source
         self.player.hp = run_state.hp
         self._arm_floor()
         self.player.targets = self.targets
@@ -571,8 +572,12 @@ class FloorSession:
             self.level_tick(world_dt)
         if self.boss_bar is not None:
             self.boss_bar.update()
-        self.camera_rig.update(self.player.position, self.player.aim_yaw,
-                               self.player.aim_pitch)
+        self.camera_rig.update(
+            self.player.position, self.player.aim_yaw,
+            self.player.aim_pitch,
+            wall_side=(self.player.wallrun_side_facing
+                       if self.player.wall_running else 0),
+            dt=dt)
         self.hud.update_state(
             hp=self.player.hp,
             bullet_charge=self.player.charge,
@@ -873,12 +878,14 @@ if __name__ == "__main__":
     _restart()
     mouse.locked = True
     _edges = {"slide": False, "melee": False, "bullet_time": False,
-              "reload": False}
+              "reload": False, "jump": False}
     _aim = {"yaw": 0.0, "pitch": 0.0}
 
     def input(key):  # noqa: A001 — Ursina's input hook name
         if key in ("left shift", "shift"):
             _edges["bullet_time"] = True
+        elif key == "space":
+            _edges["jump"] = True
         elif key == "c":
             _edges["slide"] = True
         elif key in ("right mouse down", "f"):
@@ -923,6 +930,7 @@ if __name__ == "__main__":
             slide=_edges["slide"],
             bullet_time=_edges["bullet_time"],
             reload=_edges["reload"],
+            jump=_edges["jump"],
         )
         for name in _edges:
             _edges[name] = False
