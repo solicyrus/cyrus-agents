@@ -84,6 +84,45 @@ Realistic 3D environments with high-detail textures. Dynamic lighting and shadow
 
 ---
 
+## 7c. Final Rating Formula (Approved by Cyrus — governs over §7b proposals)
+
+The formulas and thresholds in this section were approved by Cyrus on
+2026-10-27 as the FINAL rating structure of the game. Where §7 or §7b carry
+designer-proposed values (including the S = 1000+ rank bands), this section
+governs and those proposals are superseded.
+
+**Final Take Rating**
+
+```
+S_total = S_time + (S_stunt × M_combo)
+```
+
+- **S_time** = `max(0, (T_target − T_actual) × 100)` — T_target is the stage
+  target time in seconds, T_actual is the player's recorded completion time.
+  Finishing at or over the target yields S_time = 0.
+  Check: 85 s against a 120 s target → (120 − 85) × 100 = **3,500**.
+- **S_stunt** = the raw sum of stunt base points earned during the run
+  (Stunt Matrix in §7b: Bullet Dodge 50 · Slide & Shoot 100 · Air Takedown
+  150 · Wall-Run Kill 200; Multi-Kill Combo events apply their own ×2–×5).
+- **M_combo** = the combo / diversity multiplier built during the run
+  (+0.5 for each action differing from the last 3, capped at 5.0, reset on
+  taking a hit), applied to the stunt sum at the final rating.
+
+**Rank thresholds (final, approved)**
+
+| Rank | S_total | Cinematic title |
+|---|---|---|
+| S (Superstar) | ≥ 15,000 | Perfect Take |
+| A (Action Hero) | 10,000 – 14,999 | Box Office Hit |
+| B (Stunt Double) | 6,000 – 9,999 | Good Take |
+| C (Extra) | 3,000 – 5,999 | Wrap Scene |
+| F (Failed Test) | < 3,000 | Re-take Required |
+
+The live HUD layout that presents these values is specified in `HUD-SPEC.md`
+(this folder) and implemented by `hud/hud_manager.py`.
+
+---
+
 ## Open items (honest notes — NOT in the machine GDD)
 - Rank thresholds in section 7b (S/A/B/C/F point bands) are the designer's proposed formula values; they will be re-tuned once Level 1 is playable and real score ranges are known.
 - Enemy counts per floor, health/damage numbers and weapon stats are not yet fixed — they belong to the Level 1 slice design pass.
