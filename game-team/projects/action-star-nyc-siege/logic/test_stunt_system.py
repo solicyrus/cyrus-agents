@@ -74,6 +74,9 @@ def test_stunt_matrix():
             "slide_shoot": 100,
             "air_takedown": 150,
             "wall_run_kill": 200,
+            # Stage-3 additions, approved by Cyrus 2026-10-27:
+            "shield_bypass": 250,
+            "defenestration": 500,
         },
         f"got {STUNT_MATRIX}",
     )
@@ -446,8 +449,39 @@ def test_simultaneous_no_interference():
           graded == (11800, "A", "Box Office Hit"), f"got {graded}")
 
 
+# --------------------------------------------------------------------------
+# 13. Stage-3 stunt actions (Cyrus 2026-10-27): defenestration + shield_bypass
+# --------------------------------------------------------------------------
+
+def test_stage3_stunt_actions():
+    check("matrix: defenestration == 500 PTS",
+          STUNT_MATRIX.get("defenestration") == 500,
+          f"got {STUNT_MATRIX.get('defenestration')}")
+    check("matrix: shield_bypass == 250 PTS",
+          STUNT_MATRIX.get("shield_bypass") == 250,
+          f"got {STUNT_MATRIX.get('shield_bypass')}")
+    # Through register(): a fresh manager's first action is new, so the
+    # multiplier rises to x1.5 BEFORE scoring (the manager's core rule):
+    # defenestration must bank int(500 x 1.5) = 750 with base 500 recorded.
+    clock = FakeClock()
+    sm = StuntManager(clock)
+    added, mult = sm.register("defenestration")
+    event = sm.events[-1]
+    check("register('defenestration') scores 500 base through the combo math",
+          event.base_points == 500 and added == 750 and mult == 1.5,
+          f"base={event.base_points} added={added} mult={mult}")
+    clock2 = FakeClock()
+    sm2 = StuntManager(clock2)
+    added2, mult2 = sm2.register("shield_bypass")
+    event2 = sm2.events[-1]
+    check("register('shield_bypass') scores 250 base through the combo math",
+          event2.base_points == 250 and added2 == 375 and mult2 == 1.5,
+          f"base={event2.base_points} added={added2} mult={mult2}")
+
+
 SECTIONS = [
     ("Stunt Matrix", test_stunt_matrix),
+    ("Stage-3 stunt actions", test_stage3_stunt_actions),
     ("Diversity multiplier", test_diversity_rules),
     ("Explicit points & validation", test_explicit_points_and_validation),
     ("Combo reset", test_reset_combo),
