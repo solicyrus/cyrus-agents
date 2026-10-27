@@ -1,0 +1,6 @@
+# Game Creator Agents — Python dependencies.
+openai>=1.30
+python-dotenv
+# Runtime for the generated games + the QA agent's headless
+# smoke runs (the agents themselves are standard-library only).
+pygame>=2.5
