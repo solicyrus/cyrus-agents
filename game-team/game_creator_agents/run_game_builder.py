@@ -30,6 +30,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+# Load .env files (this folder first, then the cyrus-agents repo
+# root) BEFORE the agents read AGENT_API_KEY / AGENT_MODEL. Real
+# values live ONLY in those local files — never in the repo.
+# Guarded: python-dotenv is declared in requirements.txt, but the
+# pipeline must still start without it.
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(Path(__file__).resolve().parent / ".env")
+    load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+except Exception:
+    pass
+
 import game_designer_agent as designer  # noqa: E402
 import game_developer_agent as developer  # noqa: E402
 import game_qa_agent as qa  # noqa: E402
