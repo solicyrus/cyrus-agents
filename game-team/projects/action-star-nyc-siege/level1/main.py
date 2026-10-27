@@ -73,6 +73,7 @@ class GameSession:
         self.stunt = StuntManager(clock=lambda: self.timer.elapsed)
         self.hud = HUDManager(target_s=TARGET_TIME_S)
         self.player = PlayerController(self.level.world, self.stunt, self.hud)
+        self.player.camera_rig = self.level.camera_rig   # OTS aim source
 
         rng = random.Random(20261027)
         self.guards = [Guard(self.level.world, name, points, rng)
@@ -115,9 +116,12 @@ class GameSession:
                        not self.player.dead, self.bullets)
         self.bullets.tick(world_dt, self.player, self.stunt,
                           self.player.bt_active)
-        self.level.camera_rig.update(self.player.position,
-                                     self.player.aim_yaw,
-                                     self.player.aim_pitch)
+        self.level.camera_rig.update(
+            self.player.position, self.player.aim_yaw,
+            self.player.aim_pitch,
+            wall_side=(self.player.wallrun_side_facing
+                       if self.player.wall_running else 0),
+            dt=dt)
         self.hud.update_state(
             hp=self.player.hp,
             bullet_charge=self.player.charge,
@@ -195,12 +199,14 @@ if __name__ == "__main__":
     session = GameSession()
     mouse.locked = True
     _edges = {"slide": False, "melee": False, "bullet_time": False,
-              "reload": False}
+              "reload": False, "jump": False}
     _aim = {"yaw": 0.0, "pitch": 0.0}
 
     def input(key):  # noqa: A001 — Ursina's input hook name
         if key in ("left shift", "shift"):
             _edges["bullet_time"] = True
+        elif key == "space":
+            _edges["jump"] = True
         elif key == "c":
             _edges["slide"] = True
         elif key in ("right mouse down", "f"):
@@ -242,6 +248,7 @@ if __name__ == "__main__":
             slide=_edges["slide"],
             bullet_time=_edges["bullet_time"],
             reload=_edges["reload"],
+            jump=_edges["jump"],
         )
         for name in _edges:
             _edges[name] = False
