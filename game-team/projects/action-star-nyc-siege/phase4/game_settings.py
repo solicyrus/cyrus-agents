@@ -16,6 +16,15 @@ SETTINGS_FILENAME = "settings.json"
 RESOLUTIONS = [(1280, 720), (1600, 900), (1920, 1080)]
 GRAPHICS_LEVELS = ("Low", "Medium", "High")
 
+# Canonical stage registry: id -> (display name, target time seconds).
+# (Persistence of results is owned by save_system.SaveManager at the
+# project root — see game_ui_screens.HighScoresScreen.)
+STAGES = {
+    "lobby": ("Lobby", 90.0),
+    "data_center": ("Data Center", 75.0),
+    "penthouse": ("Penthouse", 105.0),
+}
+
 
 @dataclass
 class GameSettings:
