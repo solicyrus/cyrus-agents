@@ -1,15 +1,24 @@
 """Menu + screens smoke test — Phase 4 (headless, xvfb).
 
 Drives the REAL Phase-4 UI programmatically, no mouse:
-  menu -> HIGH SCORES (empty table) -> settings (volume / resolution /
-  graphics / key guide) -> record a take -> HIGH SCORES shows it ->
-  VICTORY card (A / Box Office Hit, 11,800) -> RE-TAKE -> card again ->
-  BACK TO MENU -> GAME OVER state (F / Re-take Required) -> stage start.
+  menu -> HIGH SCORES (empty: honest "No takes yet") -> settings
+  (volume / resolution / graphics / key guide) -> a take appears in
+  HIGH SCORES -> VICTORY card (A / Box Office Hit, 11,800) -> RE-TAKE
+  -> BACK TO MENU -> GAME OVER state (F / Re-take Required) ->
+  STAGE SELECT opens the LevelSelectMenu -> its choice starts the
+  stage -> START GAME starts the Lobby.
 
-Also constructs the SoundManager and fires SFX/UI + a Bullet-Time
-switch. NOTE: this sandbox has NO audio device (Panda3D falls back to
-NullAudioManager), so clips are asserted as constructed objects, not
-as audible playback.
+COORDINATION SEAM: save_system.SaveManager and level_select.
+LevelSelectMenu are owned by the save-system workstream and had NOT
+landed when this test was written. The screen/menu are therefore
+verified against faithful doubles implementing exactly the contracted
+interfaces — SaveManager().data / get_level_record(level), and a
+LevelSelectMenu with show()/hide() whose choice calls back into the
+menu. Integration with the real modules is pending their landing and
+is flagged in TEST-REPORT.md.
+
+Audio: this sandbox has NO audio device (NullAudioManager fallback) —
+clips are asserted as constructed objects, not audible playback.
 
 Run:  xvfb-run -a python test_menu_smoke.py   (exit 0 = PASS)
 """
@@ -22,7 +31,7 @@ import tempfile
 from pathlib import Path
 
 _TMP = tempfile.mkdtemp(prefix="actionstar-smoke-")
-os.environ["ACTION_STAR_DATA_DIR"] = _TMP  # scores/settings land in tmp
+os.environ["ACTION_STAR_DATA_DIR"] = _TMP  # settings land in tmp
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
@@ -33,7 +42,6 @@ from phase4.game_settings import load_settings  # noqa: E402
 from phase4.game_ui_screens import (HighScoresScreen, SettingsMenu,  # noqa: E402
                                     VictoryScreen)
 from phase4.main_menu import MainMenuState  # noqa: E402
-from phase4.scores_store import ScoresStore  # noqa: E402
 from phase4.sound_manager import SoundManager  # noqa: E402
 
 RESULTS = []
@@ -44,19 +52,55 @@ def check(ok: bool, label: str, detail: str = "") -> None:
     print(f"{'PASS' if ok else 'FAIL'}  {label}  {detail}", flush=True)
 
 
+# ------------------------------------------------------- contract doubles
+class FakeSaveManager:
+    """Faithful double of save_system.SaveManager's read contract."""
+
+    def __init__(self) -> None:
+        self._records = {}
+        self.data = {"unlocked_levels": ["lobby"], "levels": self._records}
+
+    def get_level_record(self, level):
+        return self._records.get(level)
+
+    def set_record(self, level, record) -> None:
+        self._records[level] = record
+
+
+class FakeLevelSelect:
+    """Faithful double of level_select.LevelSelectMenu's seam."""
+
+    def __init__(self, on_choose) -> None:
+        self.visible = False
+        self.on_choose = on_choose
+
+    def show(self) -> None:
+        self.visible = True
+
+    def hide(self) -> None:
+        self.visible = False
+
+    def choose(self, stage_id) -> None:
+        self.on_choose(stage_id)
+
+
+# ------------------------------------------------------------------- rig
 app = Ursina(title="Action Star — Phase 4 smoke", vsync=False)
 
 settings = load_settings()
 sound = SoundManager(bgm_volume=settings.bgm_volume,
                      sfx_volume=settings.sfx_volume,
                      ui_volume=settings.ui_volume)
-store = ScoresStore()
+save = FakeSaveManager()
 
 events = {"start": [], "retake": [], "menu": 0}
 menu = MainMenuState()
+level_select = FakeLevelSelect(on_choose=menu.press_stage)
+menu.attach_level_select(level_select)
 settings_screen = SettingsMenu(settings, sound_manager=sound,
                                on_back=lambda: menu.show())
-scores_screen = HighScoresScreen(store, on_back=lambda: menu.show())
+scores_screen = HighScoresScreen(save_manager=save,
+                                 on_back=lambda: menu.show())
 victory = VictoryScreen(
     sound_manager=sound,
     on_retake=lambda sid: events["retake"].append(sid),
@@ -77,7 +121,8 @@ def step_scores_empty() -> None:
     check(menu.last_action == "scores" and scores_screen.visible,
           "menu -> HIGH SCORES opens")
     check("No takes yet" in scores_screen.lines.text,
-          "empty table is honest", scores_screen.lines.text.splitlines()[0])
+          "no records -> honest 'No takes yet'",
+          scores_screen.lines.text.splitlines()[0])
     scores_screen.press_back()
     check(not scores_screen.visible, "scores BACK closes")
 
@@ -104,15 +149,13 @@ def step_settings() -> None:
 
 
 def step_record_and_scores() -> None:
-    became = store.record("lobby", s_total=11800, rank="A",
-                          title="Box Office Hit", s_time=3500,
-                          stunt_base=3320, combo_multiplier=2.5,
-                          t_actual=85.0, t_target=90.0)
-    check(became, "victory flow writes the take to the store")
+    save.set_record("lobby", {"best_score": 11800, "best_time": 85.0,
+                              "rank": "A", "title": "Box Office Hit"})
     menu.press_scores()
     text = scores_screen.lines.text
     check("11,800" in text and "Box Office Hit" in text,
-          "HIGH SCORES lists the recorded best", text.splitlines()[0])
+          "HIGH SCORES reads the best through SaveManager",
+          text.splitlines()[0])
     scores_screen.press_back()
 
 
@@ -126,7 +169,8 @@ def step_victory() -> None:
           "rank card: A / Box Office Hit")
     check("11,800" in victory.breakdown.text
           and "3,500" in victory.breakdown.text,
-          "breakdown shows S_time + total", victory.breakdown.text.splitlines()[-1])
+          "breakdown shows S_time + total",
+          victory.breakdown.text.splitlines()[-1])
     victory.press_retake()
     check(events["retake"] == ["lobby"] and not victory.visible,
           "RE-TAKE fires with the stage id")
@@ -161,13 +205,15 @@ def step_sound_and_start() -> None:
           "Bullet Time switches the mix to 0.4x variants")
     sound.set_bullet_time(False)
     check(abs(sound.time_scale - 1.0) < 1e-9, "Bullet Time exit restores 1.0x")
-    menu.press_start()
-    check(events["start"] == ["lobby"] and menu.last_stage == "lobby",
-          "START GAME launches the Lobby")
     menu.press_stage_select()
-    menu.press_stage("penthouse")
-    check(events["start"][-1] == "penthouse",
-          "STAGE SELECT launches the Penthouse")
+    check(level_select.visible and menu.last_action == "stage_select",
+          "STAGE SELECT opens the LevelSelectMenu")
+    level_select.choose("penthouse")
+    check(events["start"] == ["penthouse"] and not level_select.visible,
+          "LevelSelectMenu choice starts the Penthouse")
+    menu.press_start()
+    check(events["start"][-1] == "lobby" and menu.last_stage == "lobby",
+          "START GAME launches the Lobby")
 
 
 STEPS = [step_scores_empty, step_settings, step_record_and_scores,
