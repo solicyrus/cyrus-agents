@@ -197,3 +197,45 @@ level_2 best 15,554 / S, level_3 best 24,786 / S.
    or menus; in standalone play the VictoryScreen's buttons Re-take
    (rebuilds the pipeline) and quit. Sound hookup belongs with the
    game_entry wiring in seam 1.
+
+---
+
+## ADDENDUM — 2026-10-27: time-bank cap +30 s + final menu wiring (Cyrus's orders)
+
+Appended, not rewritten: the runs above stand as the record of the
+uncapped rule. Two of Cyrus's orders landed after them:
+
+**1. Applied time-bank bonus capped at +30 s.** Chain rule 2 is now:
+`effective_target = base_target + min(banked_seconds, 30.0)`
+(`pipeline_state.BANK_BONUS_CAP_S = 30.0`, applied in
+`RunState.effective_target`). Accrual is unchanged — a floor's
+remaining is still computed against its effective cap and the full
+amount accrues in `RunState.banked_seconds`; only the bonus APPLIED
+to the next floor's target is capped. This supersedes the "banking
+compounds" note in Seams item 6 above: floor caps can no longer grow
+past base + 30. The elevator panel now prints the applied bonus
+("+30.0s to the next floor (applied bonus, cap +30s)").
+
+Unit asserts added (in both `test_full_pipeline.py` Part 1 and
+`test_full_cycle.py` Part 0):
+- banked 84.3 → next targets are base + 30.0 EXACTLY (75→105.0, 105→135.0);
+- banked 12.0 → base + 12.0 (under the cap, applied in full);
+- through a real settle: 84.3 s remaining accrues as 84.3 in the run
+  state while the next floor's cap is 105.0.
+The pre-existing `unit_settle_floor_math` and the live
+`floor2_target_banked` / `floor3_target_banked` expectations were
+updated to the capped rule. Re-run of the full pipeline suite under
+the cap: **PASS — 30/30 checks, exit 0** (live caps: floor 2 =
+105.00 = 75 + min(81.55, 30); floor 3 = 135.00 = 105 + min(99.04, 30);
+final S_total 30,822, rank S).
+
+**2. Final wiring — the menu now starts this pipeline.** This closes
+Seams item 2 above: `phase4/game_entry.launch_stage()` constructs
+`FullGamePipeline` with the entry's real VictoryScreen and a
+SaveBridge bound to the entry's one shared `SaveManager` (the same
+instance the level-select cards and high-scores screen read).
+STAGE SELECT opens the real `LevelSelectMenu`; a chosen floor starts
+the pipeline at that floor; BACK TO MENU disposes the run and returns
+to the live menu. The whole cycle — menu → Lobby → Data Center →
+Penthouse → final card → menu — is proven by `test_full_cycle.py`:
+**PASS 27/27 on two consecutive runs** (see FINAL-CYCLE-REPORT.md).
