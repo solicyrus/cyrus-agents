@@ -20,10 +20,10 @@ import logging
 import math
 from typing import Callable, Optional
 
-from ursina import Button, Entity, Text, application, camera, color, scene
+from ursina import Entity, Text, application, camera, color, scene
 
-from phase4.game_ui_screens import DIM, GOLD, NAVY_LIGHT, WHITE, _menu_button
-from phase4.scores_store import STAGES
+from phase4.game_settings import STAGES
+from phase4.game_ui_screens import DIM, GOLD, WHITE, _menu_button
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,12 @@ class MainMenuState:
         self.on_start: Optional[Callable[[str], None]] = None
         self.on_settings: Optional[Callable[[], None]] = None
         self.on_scores: Optional[Callable[[], None]] = None
+        self.on_stage_select: Optional[Callable[[], None]] = None
         self.on_quit: Optional[Callable[[], None]] = None
+        # SEAM: the LevelSelectMenu (level_select.py, project root) is
+        # attached by the host via attach_level_select(); STAGE SELECT
+        # opens it — Phase 4 owns no stage list of its own.
+        self.level_select = None
         self.last_action: Optional[str] = None
         self.last_stage: Optional[str] = None
         self.active = False
@@ -104,35 +109,29 @@ class MainMenuState:
                                             self.press_settings)
         self.quit_button = _menu_button(ui, "QUIT", -0.25, self.press_quit)
 
-        # Stage-select sub-panel (hidden until STAGE SELECT is pressed).
-        self.stage_panel = Entity(parent=ui, enabled=False)
-        Text(parent=self.stage_panel, text="SELECT STAGE",
-             position=(0, 0.13), scale=2.0, color=GOLD, origin=(0, 0))
-        self.stage_buttons = {}
-        for i, stage_id in enumerate(STAGE_ORDER):
-            name, target = STAGES[stage_id]
-            btn = Button(parent=self.stage_panel,
-                         text=f"{name.upper()}  —  Target {target:.0f}s",
-                         position=(0, 0.03 - i * 0.095), scale=(0.58, 0.075),
-                         color=NAVY_LIGHT, text_color=WHITE,
-                         highlight_color=GOLD)
-            btn.on_click = lambda sid=stage_id: self.press_stage(sid)
-            self.stage_buttons[stage_id] = btn
-        back = _menu_button(self.stage_panel, "BACK", -0.28,
-                            self.press_stage_back, scale=(0.3, 0.06))
-
     # ------------------------------------------------------------- handlers
     def press_start(self) -> None:
         """START GAME = the first stage (Lobby)."""
         self.press_stage(STAGE_ORDER[0], action=MenuResult.START)
 
+    def attach_level_select(self, level_select_menu) -> None:
+        """Attach the LevelSelectMenu (level_select.LevelSelectMenu).
+
+        Its stage choice must call back into press_stage() — the host
+        wires that when constructing it.
+        """
+        self.level_select = level_select_menu
+
     def press_stage_select(self) -> None:
         self.last_action = MenuResult.STAGE_SELECT
-        self.stage_panel.enabled = True
-        logger.info("Menu: stage select opened")
-
-    def press_stage_back(self) -> None:
-        self.stage_panel.enabled = False
+        logger.info("Menu: stage select")
+        if self.level_select is not None:
+            self.level_select.show()
+        elif self.on_stage_select is not None:
+            self.on_stage_select()
+        else:
+            logger.warning("STAGE SELECT pressed with no LevelSelectMenu "
+                           "attached — integration seam still open")
 
     def press_stage(self, stage_id: str,
                     action: str = MenuResult.STAGE_SELECT) -> None:
@@ -140,7 +139,8 @@ class MainMenuState:
             raise ValueError(f"unknown stage {stage_id!r}")
         self.last_action = action
         self.last_stage = stage_id
-        self.stage_panel.enabled = False
+        if self.level_select is not None:
+            self.level_select.hide()
         logger.info("Menu: start stage %s (via %s)", stage_id, action)
         if self.on_start is not None:
             self.on_start(stage_id)
@@ -177,7 +177,8 @@ class MainMenuState:
         self.active = False
         self.world_root.enabled = False
         self.ui_root.enabled = False
-        self.stage_panel.enabled = False
+        if self.level_select is not None:
+            self.level_select.hide()
 
     def update(self, dt: float) -> None:
         """Slow cinematic drift: the camera breathes around the tower."""
