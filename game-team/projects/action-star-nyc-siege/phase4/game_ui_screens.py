@@ -288,31 +288,32 @@ class VictoryScreen:
         return bool(self.root.enabled)
 
 
+# Stage id -> SaveManager level number (the tower's floor order).
+LEVEL_BY_STAGE = {"lobby": 1, "data_center": 2, "penthouse": 3}
+
+
 def _record_fields(record) -> Optional[dict]:
     """Normalize a SaveManager level record to display fields.
 
-    SEAM (coordination, 2026-10-27): persistence is owned by
-    save_system.SaveManager at the project root (user_progress.json).
-    The screen reads ONLY through SaveManager.get_level_record(level).
-    That module had not landed when this screen was built, so the exact
-    record key names are normalized here across the plausible spellings
-    (s_total|best_score|score, t_actual|best_time|time, rank, title) —
-    tighten this helper to the real keys when save_system.py lands.
+    Persistence is owned by save_system.SaveManager at the project
+    root (user_progress.json); the screen reads ONLY through
+    SaveManager.get_level_record(level_num). save_system.py has
+    landed, so this helper uses its REAL record keys (best_score /
+    best_time / best_rank / title — tightened 2026-10-27, the fix the
+    Phase-4 report flagged). A fresh record (score 0, rank "N/A")
+    reads as "no record".
     """
-    if record is None:
+    if not isinstance(record, dict):
         return None
-    if isinstance(record, dict):
-        get = record.get
-    else:
-        get = lambda key, default=None: getattr(record, key, default)
-    total = get("s_total", get("best_score", get("score")))
-    if total is None:
+    total = record.get("best_score")
+    rank = str(record.get("best_rank", ""))
+    if total is None or (int(total) == 0 and rank in ("", "N/A")):
         return None
     return {
         "total": int(total),
-        "rank": str(get("rank", "")),
-        "title": str(get("title", "")),
-        "time": float(get("t_actual", get("best_time", get("time", 0.0)))),
+        "rank": rank,
+        "title": str(record.get("title", "")),
+        "time": float(record.get("best_time", 0.0)),
     }
 
 
@@ -345,7 +346,8 @@ class HighScoresScreen:
         manager = self._manager()
         rows = []
         for stage_id, (name, target) in STAGES.items():
-            fields = _record_fields(manager.get_level_record(stage_id))
+            fields = _record_fields(
+                manager.get_level_record(LEVEL_BY_STAGE[stage_id]))
             if fields is None:
                 rows.append(f"{name.upper():<14} No takes yet")
             else:
