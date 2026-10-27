@@ -1,0 +1,11 @@
+# Secrets — real values live ONLY in local .env files / Actions
+# secrets, never in this repo.
+.env
+.env.*
+!.env.example
+*token*.json
+client_secret*.json
+credentials*.json
+
+__pycache__/
+*.pyc
