@@ -43,6 +43,7 @@ from ursina import Ursina, Vec3, application, held_keys, mouse  # noqa: E402
 from ursina import time as ursina_time  # noqa: E402
 
 from full_game_pipeline import FullGamePipeline  # noqa: E402
+from intro_card import IntroCard  # noqa: E402
 from level1.player_controller_3d import PlayerInput  # noqa: E402
 from level_select import LevelSelectMenu  # noqa: E402
 from pipeline_state import FLOOR_TABLE, SaveBridge  # noqa: E402
@@ -117,6 +118,13 @@ victory_screen = VictoryScreen(
 
 _screens = [settings_screen, scores_screen, victory_screen]
 
+# The fiction slate (intro_card.py): shown on every run start, before
+# Floor 1 plays. While it is up, pump() ticks the slate instead of the
+# pipeline and the floor timer is paused (TimerManager.pause — the
+# API's documented cutscene case), so the take clock starts when the
+# slate drops: click / any key / dismiss_intro() / its own auto-hold.
+intro_card = IntroCard(on_dismiss=lambda: _intro_dismissed())
+
 level_select = LevelSelectMenu(
     save_manager,
     on_level_chosen=lambda num: menu.press_stage(STAGE_ID_BY_FLOOR[num]),
@@ -140,8 +148,30 @@ def show_only(target) -> None:
 # ===========================================================================
 # Run control — the START -> pipeline wiring
 # ===========================================================================
-_run = {"pipeline": None, "start_floor": 1}
+_run = {"pipeline": None, "start_floor": 1, "intro_active": False}
 _input_provider: Optional[Callable[[], PlayerInput]] = None
+
+
+def intro_active() -> bool:
+    """True while the intro slate is holding the run at the gate."""
+    return bool(_run["intro_active"])
+
+
+def dismiss_intro() -> None:
+    """Programmatic slate drop (tests/tools; clicks and keys route
+    here too, through the card itself and input())."""
+    intro_card.dismiss()
+
+
+def _intro_dismissed() -> None:
+    """The slate dropped: start the take clock and let pump() play."""
+    _run["intro_active"] = False
+    pipeline = _run["pipeline"]
+    if pipeline is not None and pipeline.session is not None:
+        timer = pipeline.session.timer
+        if timer.is_paused:
+            timer.resume()
+    logger.info("Intro dismissed — the take is rolling")
 
 
 def active_pipeline() -> Optional[FullGamePipeline]:
@@ -179,8 +209,18 @@ def _start_run(start_floor: int) -> None:
         start_floor=start_floor,
         victory_screen=victory_screen,
         save_bridge=save_bridge)
+    # The fiction slate gates the take: the pipeline exists from this
+    # moment (the shell's contract), but pump() will not tick it and
+    # the floor clock is paused until the slate drops.
+    _run["intro_active"] = True
+    intro_card.show()
+    session = _run["pipeline"].session
+    if session is not None and session.timer.is_running \
+            and not session.timer.is_paused:
+        session.timer.pause()
     _set_mouse_locked(True)
-    logger.info("Run started at floor %d (FullGamePipeline)", start_floor)
+    logger.info("Run started at floor %d (FullGamePipeline) — "
+                "intro slate up", start_floor)
 
 
 def _dispose_run() -> None:
@@ -188,6 +228,8 @@ def _dispose_run() -> None:
     if pipeline is not None:
         pipeline.dispose()
         _run["pipeline"] = None
+    _run["intro_active"] = False
+    intro_card.hide()
     sound.set_bullet_time(False)
 
 
@@ -217,13 +259,19 @@ def _set_mouse_locked(locked: bool) -> None:
 # Human input (keyboard/mouse) — used when no provider is registered
 # ===========================================================================
 _edges = {"slide": False, "melee": False, "bullet_time": False,
-          "reload": False}
+          "reload": False, "jump": False}
 _aim = {"yaw": 0.0, "pitch": 0.0}
 
 
 def input(key):  # noqa: A001 — Ursina's input hook name
+    if _run["intro_active"]:
+        # Any key drops the slate (clicks land on the card itself).
+        intro_card.dismiss()
+        return
     if key in ("left shift", "shift"):
         _edges["bullet_time"] = True
+    elif key == "space":
+        _edges["jump"] = True
     elif key == "c":
         _edges["slide"] = True
     elif key in ("right mouse down", "f"):
@@ -269,6 +317,7 @@ def _keyboard_input() -> PlayerInput:
         slide=_edges["slide"],
         bullet_time=_edges["bullet_time"],
         reload=_edges["reload"],
+        jump=_edges["jump"],
     )
     for name in _edges:
         _edges[name] = False
@@ -285,6 +334,12 @@ def pump(dt: float) -> None:
     pipeline = _run["pipeline"]
     if pipeline is None:
         menu.update(dt)
+        return
+    if _run["intro_active"]:
+        # The slate holds the gate: the pipeline is NOT ticked and its
+        # floor clock is paused. tick() auto-drops the slate after its
+        # hold, which resumes the clock via _intro_dismissed.
+        intro_card.tick(min(dt, 0.05))
         return
     inp = _input_provider() if _input_provider is not None \
         else _keyboard_input()
