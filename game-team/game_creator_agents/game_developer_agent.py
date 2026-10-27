@@ -8,6 +8,16 @@ Studio red lines enforced here, deterministically:
     ``pass`` stub, "Add logic here", a raised NotImplementedError, etc. is
     REJECTED and generate_game raises — the file never reaches disk.
   * Syntax guard: any generated file that does not compile is rejected.
+  * Cross-module consistency gate: modules are generated one at a time, so a
+    later module can import a name an earlier module never defined (the first
+    real run died exactly this way: main.py imported SCREEN_WIDTH from a
+    config.py that never defined it). Two defences, both enforced here:
+    (1) context — every module after the first is generated with the FULL
+    source of the already-generated modules in its prompt, instructed to
+    import only names that actually exist there; (2) a deterministic AST
+    gate over the whole in-memory project that verifies every cross-module
+    import and module-attribute use resolves to a name the target module
+    actually defines. Any miss rejects the whole project before disk-write.
   * Honesty: no AGENT_API_KEY -> AgentNotConfiguredError. No fake code, ever.
 
 Environment:
@@ -18,6 +28,7 @@ Environment:
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import logging
 import os
@@ -207,15 +218,25 @@ def _request_module_code(
     gdd: dict[str, Any],
     filename: str,
     role: str,
-    already_generated: list[str],
+    generated_so_far: dict[str, str],
 ) -> str:
     gdd_json = json.dumps(gdd, indent=2, ensure_ascii=False)
-    done_note = (
-        "Modules already generated (import from them, do not redefine them): "
-        + ", ".join(already_generated)
-        if already_generated
-        else "This is the first module; no other project modules exist yet."
-    )
+    if generated_so_far:
+        context_blocks = "\n\n".join(
+            f"===== EXISTING MODULE {name} (full source) =====\n{source}"
+            for name, source in generated_so_far.items()
+        )
+        done_note = (
+            "The modules below are ALREADY WRITTEN and final. Their full "
+            "source is included so you can see exactly what exists. Import "
+            "ONLY names that are actually defined in these sources — never "
+            "import, reference, or assume a name that does not appear in "
+            "them; if you need a value or helper that is not there, define "
+            "it inside your own module instead. Do not redefine anything "
+            "these modules already define.\n\n" + context_blocks
+        )
+    else:
+        done_note = "This is the first module; no other project modules exist yet."
     system = (
         "You are the Lead Architect of a game studio: a senior Python game "
         "developer. Write ONE complete, runnable module of a Pygame game. "
@@ -225,7 +246,9 @@ def _request_module_code(
         "'...' bodies, NO NotImplementedError, NO placeholder text of any "
         "kind; the file must compile exactly as written and implement the "
         "GDD faithfully (mechanics, physics rules, scoring, controls, "
-        "win/lose conditions)."
+        "win/lose conditions). Cross-module rule: any name you import from "
+        "another project module MUST exist in that module's source as given "
+        "to you — a wrong import name is a build failure."
     )
     user = (
         f"Game Design Document:\n{gdd_json}\n\n"
@@ -264,12 +287,145 @@ def _validate_module(filename: str, code_text: str) -> None:
         ) from exc
 
 
+# ---------------------------------------------------------------------------
+# Cross-module consistency gate (deterministic, AST-based)
+# ---------------------------------------------------------------------------
+
+def _assigned_target_names(target: ast.expr) -> set[str]:
+    """Names bound by one assignment target (plain names + tuple unpacking)."""
+    if isinstance(target, ast.Name):
+        return {target.id}
+    if isinstance(target, (ast.Tuple, ast.List)):
+        names: set[str] = set()
+        for element in target.elts:
+            names |= _assigned_target_names(element)
+        return names
+    return set()
+
+
+def _module_defined_names(tree: ast.Module) -> set[str]:
+    """Top-level names a module actually defines: assignments, annotated
+    assignments, function/class defs — plus names the module itself imports
+    at top level (those live in its namespace, so `from this_module import X`
+    legitimately succeeds for them at runtime)."""
+    names: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                names |= _assigned_target_names(target)
+        elif isinstance(node, ast.AnnAssign):
+            names |= _assigned_target_names(node.target)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names.add(node.name)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                names.add(alias.asname or alias.name.split(".")[0])
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name != "*":
+                    names.add(alias.asname or alias.name)
+    return names
+
+
+def find_consistency_errors(modules: dict[str, str]) -> list[str]:
+    """AST-check every cross-module reference between the generated modules.
+
+    For each module, every statically resolvable reference to a sibling
+    project module is verified against the names that sibling actually
+    defines:
+
+      * ``from config import X``          -> X must be defined in config.py
+      * ``import entities`` + ``entities.Y`` -> Y must be defined in entities.py
+        (aliases like ``import entities as ent`` are honoured)
+
+    Star imports (``from config import *``) cannot be resolved statically and
+    are skipped. References to modules outside the generated set (pygame,
+    stdlib, ...) are not this gate's business. Returns one human-readable
+    problem per unresolved name; an empty list means the project is
+    consistent.
+    """
+    stems = {Path(filename).stem: filename for filename in modules}
+    trees: dict[str, ast.Module] = {}
+    defined: dict[str, set[str]] = {}
+    problems: list[str] = []
+    seen: set[tuple[str, str, str]] = set()
+
+    def report(importer: str, target_file: str, detail: str) -> None:
+        key = (importer, target_file, detail)
+        if key not in seen:
+            seen.add(key)
+            problems.append(f"{importer}: {detail}")
+
+    for filename, source in modules.items():
+        try:
+            trees[filename] = ast.parse(source, filename=filename)
+        except SyntaxError as exc:
+            problems.append(f"{filename}: does not parse: {exc}")
+    for filename, tree in trees.items():
+        defined[filename] = _module_defined_names(tree)
+
+    for filename, tree in trees.items():
+        # Aliases under which this module refers to sibling modules.
+        module_aliases: dict[str, str] = {}  # local name -> target filename
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    top = alias.name.split(".")[0]
+                    if top in stems:
+                        module_aliases[alias.asname or top] = stems[top]
+                    # external modules (pygame, stdlib, ...) are not checked
+            elif isinstance(node, ast.ImportFrom):
+                if node.level or not node.module:
+                    continue  # relative imports are not generated; skip
+                target_stem = node.module.split(".")[0]
+                if target_stem not in stems:
+                    continue  # external module — not checked here
+                target_file = stems[target_stem]
+                for alias in node.names:
+                    if alias.name == "*":
+                        continue  # star import: not statically resolvable
+                    if alias.name not in defined[target_file]:
+                        report(
+                            filename,
+                            target_file,
+                            f"imports '{alias.name}' from {target_file}, "
+                            f"but {target_file} never defines '{alias.name}'",
+                        )
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.Attribute)
+                and isinstance(node.value, ast.Name)
+                and node.value.id in module_aliases
+            ):
+                target_file = module_aliases[node.value.id]
+                if node.attr not in defined[target_file]:
+                    report(
+                        filename,
+                        target_file,
+                        f"uses '{node.value.id}.{node.attr}', but "
+                        f"{target_file} never defines '{node.attr}'",
+                    )
+    return problems
+
+
+def validate_project_consistency(modules: dict[str, str]) -> None:
+    """Gate wrapper: raise CodeRejectedError listing every unresolved name."""
+    problems = find_consistency_errors(modules)
+    if problems:
+        raise CodeRejectedError(
+            "Generated project REJECTED by the cross-module consistency "
+            "gate — unresolved cross-module name(s):\n  - " + "\n  - ".join(problems)
+        )
+
+
 def generate_game(gdd: Any, out_dir: str | Path) -> list[Path]:
     """Generate a complete game project from a GDD into out_dir.
 
     Every module is generated and validated in memory first; only when the
-    whole project passes the placeholder + syntax guards is anything written
-    to disk. Returns the list of written file paths.
+    whole project passes the placeholder + syntax guards AND the cross-module
+    consistency gate (every import between generated modules resolves to a
+    name the target module defines) is anything written to disk. Returns the
+    list of written file paths.
 
     Raises AgentNotConfiguredError without AGENT_API_KEY, and
     CodeRejectedError when any generated file trips a guard.
@@ -294,11 +450,16 @@ def generate_game(gdd: Any, out_dir: str | Path) -> list[Path]:
     generated: dict[str, str] = {}
     for filename, role in PYGAME_MODULE_PLAN:
         code_text = _request_module_code(
-            client, model, gdd_dict, filename, role, list(generated.keys())
+            client, model, gdd_dict, filename, role, dict(generated)
         )
         _validate_module(filename, code_text)
         generated[filename] = code_text
         logger.info("Module %s generated and validated (%d bytes)", filename, len(code_text))
+
+    # Cross-module consistency gate — still fully in memory; a miss here
+    # rejects the whole project and nothing reaches disk.
+    validate_project_consistency(generated)
+    logger.info("Cross-module consistency gate passed for %d modules", len(generated))
 
     out_path = Path(out_dir)
     try:
