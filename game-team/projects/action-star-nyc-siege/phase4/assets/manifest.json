@@ -1,0 +1,56 @@
+{
+  "sample_rate": 22050,
+  "bullet_time_rate": 0.4,
+  "assets": {
+    "bgm_loop.wav": {
+      "duration_s": 8.0,
+      "bullet_time_duration_s": 20.0,
+      "origin": "synthesized v1 (numpy) \u2014 no licensed audio"
+    },
+    "sfx_gunshot.wav": {
+      "duration_s": 0.28,
+      "bullet_time_duration_s": 0.7,
+      "origin": "synthesized v1 (numpy) \u2014 no licensed audio"
+    },
+    "sfx_casing.wav": {
+      "duration_s": 0.22,
+      "bullet_time_duration_s": 0.55,
+      "origin": "synthesized v1 (numpy) \u2014 no licensed audio"
+    },
+    "sfx_slide.wav": {
+      "duration_s": 0.65,
+      "bullet_time_duration_s": 1.625,
+      "origin": "synthesized v1 (numpy) \u2014 no licensed audio"
+    },
+    "sfx_glass_break.wav": {
+      "duration_s": 0.7,
+      "bullet_time_duration_s": 1.75,
+      "origin": "synthesized v1 (numpy) \u2014 no licensed audio"
+    },
+    "sfx_melee_hit.wav": {
+      "duration_s": 0.22,
+      "bullet_time_duration_s": 0.55,
+      "origin": "synthesized v1 (numpy) \u2014 no licensed audio"
+    },
+    "sfx_server_explosion.wav": {
+      "duration_s": 1.1,
+      "bullet_time_duration_s": 2.75,
+      "origin": "synthesized v1 (numpy) \u2014 no licensed audio"
+    },
+    "ui_charge.wav": {
+      "duration_s": 0.26,
+      "bullet_time_duration_s": 0.65,
+      "origin": "synthesized v1 (numpy) \u2014 no licensed audio"
+    },
+    "ui_combo.wav": {
+      "duration_s": 0.12,
+      "bullet_time_duration_s": 0.3,
+      "origin": "synthesized v1 (numpy) \u2014 no licensed audio"
+    },
+    "ui_rank.wav": {
+      "duration_s": 0.9,
+      "bullet_time_duration_s": 2.25,
+      "origin": "synthesized v1 (numpy) \u2014 no licensed audio"
+    }
+  }
+}
