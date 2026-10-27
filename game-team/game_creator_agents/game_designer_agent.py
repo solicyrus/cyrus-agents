@@ -28,6 +28,19 @@ from typing import Any
 
 logger = logging.getLogger("game_designer_agent")
 
+# Load .env files (this folder first, then the cyrus-agents repo
+# root) so AGENT_API_KEY / AGENT_MODEL can live in a local,
+# never-committed .env. Guarded: python-dotenv is declared in
+# requirements.txt, but this module must import cleanly without it.
+try:
+    from dotenv import load_dotenv
+
+    _here = os.path.dirname(os.path.abspath(__file__))
+    load_dotenv(os.path.join(_here, ".env"))
+    load_dotenv(os.path.join(_here, "..", "..", ".env"))
+except Exception:
+    pass
+
 # Retry policy for OpenAI calls (same as the game wing's strength pass):
 # max 3 attempts, backoff ~2s then ~5s; only transient failures are retried
 # (rate limits, connection/timeout errors, 429/5xx API responses).
