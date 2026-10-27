@@ -11,6 +11,8 @@ Standard library only (urllib) — no pip installs.
 Exit code: 0 when every check passes, 1 when any check fails.
 """
 
+import http.client
+import subprocess
 import sys
 import urllib.error
 import urllib.request
@@ -85,27 +87,98 @@ CHECKS = [
 ]
 
 
-def run_check(name, url, rule, rule_desc):
-    """GET the URL once and judge it by the rule. Never raises."""
-    request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
-    status = None
-    size = 0
-    error = ""
+def fetch(url):
+    """GET the URL and return (status, body, error).
+
+    Primary engine: curl. Manager's finding (Cyrus, 2026-10-26): from this
+    network, urllib reads against the Hostinger CDN intermittently truncate
+    mid-body (IncompleteRead, wildly varying byte counts) while curl
+    delivers the exact full body for the same URLs every time. The urllib
+    path below stays as a fallback for machines without curl.
+    """
+    try:
+        proc = subprocess.run(
+            [
+                "curl", "-sS", "-L",
+                "--max-time", str(TIMEOUT_SECONDS),
+                "-A", USER_AGENT,
+                "-H", "Accept-Encoding: identity",
+                "-w", "\n__STATUS__:%{http_code}",
+                url,
+            ],
+            capture_output=True,
+            timeout=TIMEOUT_SECONDS + 10,
+        )
+        out = proc.stdout or b""
+        marker = b"\n__STATUS__:"
+        idx = out.rfind(marker)
+        if idx == -1:
+            detail = (proc.stderr or b"").decode("utf-8", "replace").strip()[:160]
+            return None, b"", f"curl: no status returned (rc={proc.returncode}) {detail}"
+        status = int(out[idx + len(marker):].strip())
+        body = out[:idx]
+        if proc.returncode != 0 and not body:
+            detail = (proc.stderr or b"").decode("utf-8", "replace").strip()[:160]
+            return status or None, body, f"curl rc={proc.returncode}: {detail}"
+        return status, body, ""
+    except FileNotFoundError:
+        return _fetch_urllib(url)
+    except Exception as exc:
+        return None, b"", f"{type(exc).__name__}: {exc}"
+
+
+def _fetch_urllib(url):
+    """urllib fallback: chunked read, IncompleteRead keeps the partial body."""
+    request = urllib.request.Request(
+        url, headers={"User-Agent": USER_AGENT, "Accept-Encoding": "identity"}
+    )
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT_SECONDS) as resp:
-            body = resp.read()
             status = resp.status
-            size = len(body)
+            chunks = []
+            try:
+                while True:
+                    chunk = resp.read(65536)
+                    if not chunk:
+                        break
+                    chunks.append(chunk)
+            except http.client.IncompleteRead as exc:
+                if exc.partial:
+                    chunks.append(exc.partial)
+            return status, b"".join(chunks), ""
     except urllib.error.HTTPError as exc:
         # The server answered; an HTTP error status is still evidence.
         try:
             body = exc.read()
-            size = len(body)
         except Exception:
-            size = 0
-        status = exc.code
+            body = b""
+        return exc.code, body, ""
     except Exception as exc:  # timeout, DNS, TLS, connection refused...
-        error = f"{type(exc).__name__}: {exc}"
+        return None, b"", f"{type(exc).__name__}: {exc}"
+
+
+def fetch_with_retry(url, attempts=3):
+    """Fetch with retries for transient CDN stream cuts.
+
+    The Hostinger CDN intermittently closes a stream early (the same URL can
+    pass one minute and truncate the next). A single attempt is not honest
+    evidence either way, so: retry on transport errors and on HTTP 200 with
+    an empty body, and keep the attempt that delivered the most bytes.
+    """
+    best = (None, b"", "no attempt made")
+    for _ in range(attempts):
+        status, body, error = fetch(url)
+        if len(body) > len(best[1]):
+            best = (status, body, error)
+        if not error and not (status == 200 and len(body) == 0):
+            return status, body, error
+    return best
+
+
+def run_check(name, url, rule, rule_desc):
+    """GET the URL (with retries) and judge it by the rule. Never raises."""
+    status, body, error = fetch_with_retry(url)
+    size = len(body)
 
     passed = False if error else bool(rule(status, size))
     return {
