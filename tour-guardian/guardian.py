@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Tour Guardian — read-only health checks for Victoria Tour and Adventure.
 
-Performs the 5 checks defined in AGENT.md, prints one PASS/FAIL line per
+Performs the 7 checks defined in AGENT.md, prints one PASS/FAIL line per
 check with evidence (HTTP status + bytes), and writes the run report to
 memory/runs/<YYYY-MM-DD>.md and memory/last-run.md next to this script.
 
@@ -69,6 +69,18 @@ CHECKS = [
         "https://app.victoriatourandadventure.com/js/vta-chat-widget-premium.js",
         is_widget_ok,
         f"HTTP 200 and >= {MIN_WIDGET_BYTES} bytes",
+    ),
+    (
+        "IELTS Academy site (cyrusielts.com)",
+        "https://cyrusielts.com",
+        is_200,
+        "HTTP 200",
+    ),
+    (
+        "IELTS Academy style.css",
+        "https://cyrusielts.com/style.css",
+        is_200,
+        "HTTP 200",
     ),
 ]
 
