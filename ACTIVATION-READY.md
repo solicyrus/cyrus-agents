@@ -108,3 +108,52 @@ own requirements).
    needed unless Cyrus wants a different model.
 4. **GITHUB_TOKEN** — nothing to provide: GitHub Actions
    supplies it automatically inside workflow runs.
+
+## Activation outcome — 2026-10-27 (EXECUTED)
+
+Cyrus approved using the SAME OpenAI key that powers the robot
+team (its value lives in the factory's own env file). The value
+was copied file→file only — never printed, logged, committed,
+or pushed.
+
+- **Local `.env` (this repo's root, chmod 600, git-ignored,
+  NOT pushed):** `AGENT_API_KEY` + `OPENAI_API_KEY` set from
+  that value; `AGENT_MODEL=gpt-4o`. copied: yes
+- **Health check with the real `.env` in place**
+  (`check_system_health.py`, exit 0):
+  - OpenAI via AGENT_API_KEY (game brain) — OK — authenticated; 134 models visible
+  - OpenAI via OPENAI_API_KEY (PR reviewers) — OK — authenticated; 134 models visible
+  - Agent model (AGENT_MODEL) — INFO — AGENT_MODEL=gpt-4o
+  - pygame + python-dotenv — OK in the run environment
+  → **LOCAL TEAM ACTIVE.**
+- **First real end-to-end game run** (`run_game_builder.py`,
+  idea: "Catch falling apples in a basket with arrow keys;
+  score for each catch; game over after 3 misses."):
+  - DESIGN — GDD "Apple Catcher" (Arcade) produced by gpt-4o
+    and validated complete; saved as `gdd.json`
+  - BUILD — 3 files generated (config.py, entities.py,
+    main.py); each passed placeholder + compile validation
+    before being written
+  - QA — **VERDICT: FAIL / REJECTED** (the system working as
+    designed — not an activation failure). compile PASS,
+    placeholders PASS, perf PASS; smoke_run FAIL:
+    `ImportError: cannot import name 'SCREEN_WIDTH' from
+    'config'` — the generated main.py imports a constant the
+    generated config.py does not define. The rejection reason
+    is the fix order in the run's RUN-REPORT.md. Per Cyrus's
+    rules the generated game was NOT hand-fixed and generation
+    was NOT re-run.
+- **GitHub Actions secrets: NOT SET (one remaining step).**
+  Attempted 2026-10-27 via the API with sealed-box encryption:
+  the actions public-key fetch returned **403 "Resource not
+  accessible by personal access token"** on all three repos
+  (cyrus-agents, cyrus-tour-guide-app, ultimate-robot-team) —
+  the fine-grained PAT lacks the Secrets permission, so
+  `OPENAI_API_KEY` (cyrus-agents) and `AGENT_API_KEY`
+  (cyrus-agents, cyrus-tour-guide-app, ultimate-robot-team)
+  could not be set. Two routes to finish: (a) add
+  "Secrets: Read and write" to the PAT on its token page, or
+  (b) set the secrets from Cyrus's signed-in browser session.
+  The local pipelines are fully active without this; only the
+  Actions-based agents (super-brain, code-agent) still wait
+  on it.
