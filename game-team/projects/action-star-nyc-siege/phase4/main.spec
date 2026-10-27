@@ -41,7 +41,7 @@ hiddenimports = []
 hiddenimports += collect_submodules("ursina")
 hiddenimports += [
     "phase4.game_entry", "phase4.main_menu", "phase4.game_ui_screens",
-    "phase4.sound_manager", "phase4.scores_store", "phase4.game_settings",
+    "phase4.sound_manager", "phase4.game_settings",
     "phase4.assets", "logic.take_rating", "logic.stunt_manager",
     "logic.timer_manager", "hud.hud_manager",
 ]
