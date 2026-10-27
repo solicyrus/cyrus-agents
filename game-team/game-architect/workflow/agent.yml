@@ -1,0 +1,77 @@
+# Game Builder workflow — adapted copy of the house Code Agent workflow
+# (.github/workflows/agent.yml in cyrus-agents), tuned for the Game Builder.
+#
+# HOW IT WILL BE USED LATER: when the manager installs the Game Builder into
+# a game repository, this file goes to that repo's .github/workflows/agent.yml
+# and the game-builder/ package sits at that repo's root (the working-directory
+# below points at it). It is NOT installed into any repository yet — this is
+# the stored copy, kept with the agent.
+
+name: AI Game Builder
+
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: 'Task for the Game Builder agent'
+        required: true
+        type: string
+  issue_comment:
+    types: [created]
+
+jobs:
+  run-agent:
+    # Only run if triggered manually OR if an issue comment starts with /agent
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.comment.body, '/agent')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    defaults:
+      run:
+        working-directory: game-builder
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Game Builder Agent
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AGENT_API_KEY: ${{ secrets.AGENT_API_KEY }}
+          AGENT_MODEL: "gpt-4o"
+        run: python agent.py
+
+      # Same manager's fix as the house workflow (Cyrus, 2026-10-26): ALL of
+      # the agent's changes are committed to a dedicated branch and opened as
+      # a Pull Request, so the manager reviews the work before it lands on
+      # main. Nothing the agent does goes live directly.
+      - name: Save agent work to a branch and open a PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          git config user.name "Game Builder Agent"
+          git config user.email "agent@bot.github.com"
+          BRANCH="game-builder/run-${{ github.run_id }}"
+          git checkout -b "$BRANCH"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to save."
+            exit 0
+          fi
+          git commit -m "Game Builder run ${{ github.run_id }}"
+          git push origin "$BRANCH"
+          gh pr create --title "Game Builder: run ${{ github.run_id }}" \
+            --body "Automated work by the Game Builder (Cyrus Game Team). Manager: review before merging." \
+            --head "$BRANCH" --base main || echo "PR creation skipped (maybe one already exists)."
