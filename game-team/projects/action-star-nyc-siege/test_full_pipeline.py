@@ -18,8 +18,10 @@ final card, and asserts the chain rules against the run's own numbers:
   * the StuntManager is ONE object across floors; its score/raw base
     at each floor's start equals the previous floor's end (never
     zeroed, never reset);
-  * floor 2's timer cap == 75 + banked lobby seconds, floor 3's ==
-    105 + banked Data Center seconds (the exact numbers);
+  * floor 2's timer cap == 75 + min(banked lobby seconds, 30), floor
+    3's == 105 + min(banked Data Center seconds, 30) — the applied
+    time-bank bonus is capped at +30 s (Cyrus's order, 2026-10-27);
+    accrual itself stays uncapped and is asserted separately;
   * HP after each floor == the rank-table heal applied to the HP the
     floor ended with, and the next floor starts at exactly that HP;
   * the boss is defeated on floor 3;
@@ -119,10 +121,44 @@ expect("unit_settle_floor_math",
        and rec.floor_rank == "B" and abs(rec.heal_applied - 40.0) < 1e-9
        and abs(rec.hp_after_heal - 90.0) < 1e-9
        and abs(rs.banked_seconds - 60.0) < 1e-9
-       and abs(rs.effective_target(75.0) - 135.0) < 1e-9
+       and abs(rs.effective_target(75.0) - 105.0) < 1e-9
        and abs(rec.banked_in_s) < 1e-9 and rec.effective_target_s == 90.0,
        f"s_time={rec.s_time} banked={rec.banked_out_s} total="
-       f"{rec.floor_s_total} rank={rec.floor_rank} heal={rec.heal_applied}")
+       f"{rec.floor_s_total} rank={rec.floor_rank} heal={rec.heal_applied} "
+       f"(next cap 105 = 75 + min(60 banked, 30 cap): accrual uncapped, "
+       f"application capped — Cyrus's +30 s order 2026-10-27)")
+
+# --- applied time-bank bonus cap +30 s (Cyrus's order, 2026-10-27) --------
+rs_cap = RunState()
+rs_cap.banked_seconds = 84.3
+expect("unit_bank_cap_84_3_applies_30",
+       rs_cap.effective_target(75.0) == 105.0
+       and rs_cap.effective_target(105.0) == 135.0,
+       f"banked 84.3 -> targets {rs_cap.effective_target(75.0)}/"
+       f"{rs_cap.effective_target(105.0)} (base + 30.0 exactly)")
+rs_cap.banked_seconds = 12.0
+expect("unit_bank_under_cap_applies_fully",
+       rs_cap.effective_target(75.0) == 87.0,
+       f"banked 12.0 -> target {rs_cap.effective_target(75.0)} (base + 12)")
+# ...and through a real settle: 84.3 s remaining accrues in full (84.3
+# in RunState.banked_seconds) while the next floor applies only +30.
+rs_settle = RunState()
+clock_cap = FakeClock()
+timer_cap = TimerManager(clock_cap, rs_settle.effective_target(90.0))
+rs_settle.attach_timer(timer_cap)
+timer_cap.start()
+clock_cap.now = 5.7          # 84.3 s remaining on the 90 s floor
+timer_cap.finish()
+rec_cap = rs_settle.settle_floor(level_num=1, timer=timer_cap, won=True,
+                                 reason="unit cap", hp_end_pre_heal=100.0,
+                                 stunt_base_start=0)
+expect("unit_bank_settle_84_3_caps_application",
+       abs(rec_cap.banked_out_s - 84.3) < 0.01
+       and abs(rs_settle.banked_seconds - 84.3) < 0.01
+       and rs_settle.effective_target(75.0) == 105.0,
+       f"banked_out={rec_cap.banked_out_s} accrued="
+       f"{rs_settle.banked_seconds:.2f} next_cap="
+       f"{rs_settle.effective_target(75.0)}")
 
 # --- a failed floor stops the chain ---------------------------------------
 rs2 = RunState()
@@ -572,15 +608,20 @@ def run_assertions():
            f"f2 start score={segments[2]['score0']} raw={segments[2]['raw0']}; "
            f"f2 end raw={r2.stunt_base_end}; f3 start raw={segments[3]['raw0']}")
 
-    # Time banking — the exact numbers.
+    # Time banking — the exact numbers, with the applied bonus capped
+    # at +30 s (Cyrus's order, 2026-10-27): cap = base + min(banked, 30).
     expect("floor2_target_banked",
-           abs(segments[2]["cap"] - (75.0 + r1.banked_out_s)) < 0.01
-           and abs(r2.effective_target_s - (75.0 + r1.banked_out_s)) < 0.01,
-           f"cap={segments[2]['cap']:.2f} = 75 + {r1.banked_out_s:.2f}")
+           abs(segments[2]["cap"] - (75.0 + min(r1.banked_out_s, 30.0))) < 0.01
+           and abs(r2.effective_target_s
+                   - (75.0 + min(r1.banked_out_s, 30.0))) < 0.01
+           and abs(r2.banked_in_s - min(r1.banked_out_s, 30.0)) < 0.01,
+           f"cap={segments[2]['cap']:.2f} = 75 + min({r1.banked_out_s:.2f}, 30)")
     expect("floor3_target_banked",
-           abs(segments[3]["cap"] - (105.0 + r2.banked_out_s)) < 0.01
-           and abs(r3.effective_target_s - (105.0 + r2.banked_out_s)) < 0.01,
-           f"cap={segments[3]['cap']:.2f} = 105 + {r2.banked_out_s:.2f}")
+           abs(segments[3]["cap"] - (105.0 + min(r2.banked_out_s, 30.0))) < 0.01
+           and abs(r3.effective_target_s
+                   - (105.0 + min(r2.banked_out_s, 30.0))) < 0.01
+           and abs(r3.banked_in_s - min(r2.banked_out_s, 30.0)) < 0.01,
+           f"cap={segments[3]['cap']:.2f} = 105 + min({r2.banked_out_s:.2f}, 30)")
 
     # Heal by rank — exact table math, carried into the next floor.
     for num, rec, nxt in ((1, r1, r2), (2, r2, r3)):
