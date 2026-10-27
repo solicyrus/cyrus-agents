@@ -167,3 +167,37 @@ VERDICT: ALL CHECKS PASSED
 ## Verdict
 
 **PASS — 96/96 checks, exit 0.** The logic core is ready to be wired into the engine layer (HUD reads: `TimerManager.time_bonus()` for S_time, `StuntManager.current_score` / `combo_multiplier` for the live meter, `take_rating.rate(...)` at stage end).
+
+---
+
+## Addendum — Stage-3 stunt actions (2026-10-27)
+
+Cyrus's Stage-3 order added two moves to the Stunt Matrix in
+`stunt_manager.py`, registered through the same `register()` path and
+combo math as every Stage-1 action:
+
+| Action | Base points | Meaning |
+|---|---|---|
+| `defenestration` | **500** | Throwing an enemy out of the penthouse window (highest-value move in the game) |
+| `shield_bypass` | **250** | Defeating a shielded Enforcer via slide-under / flank |
+
+Both were also added to `KILL_ACTIONS` (each defeats an enemy, so both
+join Multi-Kill Combo windows like the Stage-1 kills). No existing
+behaviour changed: the original four matrix values are untouched.
+
+Test changes in `test_stunt_system.py`:
+- the matrix-equality check now asserts the full six-action table;
+- a new "Stage-3 stunt actions" section asserts the 500/250 matrix
+  values and that `register("defenestration")` banks 750 and
+  `register("shield_bypass")` banks 375 on a fresh manager (500/250
+  base × 1.5 first-action combo), with the base recorded exactly.
+
+Re-run after the change (2026-10-27):
+
+```
+SUMMARY: 104/104 checks passed, 0 failed, 0 sections crashed
+VERDICT: ALL CHECKS PASSED
+```
+
+(96 original checks preserved and green, +4 in the matrix loop for the
+two new actions, +4 in the new Stage-3 section.)
