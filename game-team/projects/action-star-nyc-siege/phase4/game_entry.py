@@ -27,12 +27,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ursina import Ursina, application, time as ursina_time  # noqa: E402
 
-from phase4.game_settings import (apply_graphics, apply_resolution,  # noqa: E402
-                                  load_settings)
+from phase4.game_settings import (STAGES, apply_graphics,  # noqa: E402
+                                  apply_resolution, load_settings)
 from phase4.game_ui_screens import (HighScoresScreen, SettingsMenu,  # noqa: E402
                                     VictoryScreen)
 from phase4.main_menu import MainMenuState  # noqa: E402
-from phase4.scores_store import STAGES, ScoresStore  # noqa: E402
 from phase4.sound_manager import SoundManager  # noqa: E402
 from logic.take_rating import evaluate  # noqa: E402
 
@@ -48,12 +47,21 @@ apply_resolution(settings)
 sound = SoundManager(bgm_volume=settings.bgm_volume,
                      sfx_volume=settings.sfx_volume,
                      ui_volume=settings.ui_volume)
-store = ScoresStore()
 
 menu = MainMenuState()
 settings_screen = SettingsMenu(settings, sound_manager=sound,
                                on_back=lambda: show_only(menu))
-scores_screen = HighScoresScreen(store, on_back=lambda: show_only(menu))
+scores_screen = HighScoresScreen(on_back=lambda: show_only(menu))
+
+# SEAM: LevelSelectMenu (level_select.py, project root) + SaveManager
+# persistence are owned by the save-system workstream. When the module
+# lands, the menu's STAGE SELECT opens it here; until then the seam is
+# logged, never faked.
+try:
+    from level_select import LevelSelectMenu  # noqa: F401
+    logger.info("level_select present — wire LevelSelectMenu here")
+except Exception as exc:  # module not landed yet
+    logger.warning("level_select not integrated yet (%s)", exc)
 victory_screen = VictoryScreen(
     sound_manager=sound,
     on_retake=lambda stage_id: launch_stage(stage_id),
@@ -93,11 +101,9 @@ def launch_stage(stage_id: str) -> None:
         "stunt_breakdown": ["Bullet Dodge x4", "Slide & Shoot x3",
                             "Air Takedown x2", "Wall-Run Kill x1"],
     }
-    store.record(stage_id, s_total=result.total, rank=result.rank,
-                 title=result.title, s_time=result.s_time,
-                 stunt_base=result.stunt_base,
-                 combo_multiplier=result.combo_multiplier,
-                 t_actual=record["t_actual"], t_target=target)
+    # Persistence of the graded take goes through save_system.SaveManager
+    # (owned by the save-system workstream) once the stage integration
+    # lands; the demo path deliberately writes nothing.
     victory_screen.show_result(result, record)
 
 
