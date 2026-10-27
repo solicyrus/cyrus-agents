@@ -1,19 +1,19 @@
-# Game Builder workflow — adapted copy of the house Code Agent workflow
-# (.github/workflows/agent.yml in cyrus-agents), tuned for the Game Builder.
+# Lead Architect workflow — adapted copy of the house Code Agent workflow
+# (.github/workflows/agent.yml in cyrus-agents), tuned for the Lead Architect.
 #
-# HOW IT WILL BE USED LATER: when the manager installs the Game Builder into
+# HOW IT WILL BE USED LATER: when the manager installs the Lead Architect into
 # a game repository, this file goes to that repo's .github/workflows/agent.yml
-# and the game-builder/ package sits at that repo's root (the working-directory
+# and the game-architect/ package sits at that repo's root (the working-directory
 # below points at it). It is NOT installed into any repository yet — this is
 # the stored copy, kept with the agent.
 
-name: AI Game Builder
+name: AI Lead Architect
 
 on:
   workflow_dispatch:
     inputs:
       task:
-        description: 'Task for the Game Builder agent'
+        description: 'Task for the Lead Architect agent'
         required: true
         type: string
   issue_comment:
@@ -31,7 +31,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: game-builder
+        working-directory: game-architect
 
     steps:
       - name: Checkout Repository
@@ -45,7 +45,7 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: Run Game Builder Agent
+      - name: Run Lead Architect Agent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AGENT_API_KEY: ${{ secrets.AGENT_API_KEY }}
@@ -61,17 +61,17 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd "$GITHUB_WORKSPACE"
-          git config user.name "Game Builder Agent"
+          git config user.name "Lead Architect Agent"
           git config user.email "agent@bot.github.com"
-          BRANCH="game-builder/run-${{ github.run_id }}"
+          BRANCH="game-architect/run-${{ github.run_id }}"
           git checkout -b "$BRANCH"
           git add -A
           if git diff --cached --quiet; then
             echo "No changes to save."
             exit 0
           fi
-          git commit -m "Game Builder run ${{ github.run_id }}"
+          git commit -m "Lead Architect run ${{ github.run_id }}"
           git push origin "$BRANCH"
-          gh pr create --title "Game Builder: run ${{ github.run_id }}" \
-            --body "Automated work by the Game Builder (Cyrus Game Team). Manager: review before merging." \
+          gh pr create --title "Lead Architect: run ${{ github.run_id }}" \
+            --body "Automated work by the Lead Architect (Cyrus Game Team). Manager: review before merging." \
             --head "$BRANCH" --base main || echo "PR creation skipped (maybe one already exists)."
