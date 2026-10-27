@@ -54,11 +54,13 @@ def check(ok: bool, label: str, detail: str = "") -> None:
 
 # ------------------------------------------------------- contract doubles
 class FakeSaveManager:
-    """Faithful double of save_system.SaveManager's read contract."""
+    """Faithful double of save_system.SaveManager's read contract:
+    get_level_record(level_num: int) -> a record dict with the REAL
+    keys (best_score / best_time / best_rank / title) or None."""
 
     def __init__(self) -> None:
         self._records = {}
-        self.data = {"unlocked_levels": ["lobby"], "levels": self._records}
+        self.data = {"unlocked_levels": [1], "levels": self._records}
 
     def get_level_record(self, level):
         return self._records.get(level)
@@ -149,11 +151,13 @@ def step_settings() -> None:
 
 
 def step_record_and_scores() -> None:
-    save.set_record("lobby", {"best_score": 11800, "best_time": 85.0,
-                              "rank": "A", "title": "Box Office Hit"})
+    # A record in the REAL SaveManager shape (level number + real
+    # keys; title is the level's title, rank rides in best_rank).
+    save.set_record(1, {"best_score": 11800, "best_time": 85.0,
+                        "best_rank": "A", "title": "NYC Tower Lobby"})
     menu.press_scores()
     text = scores_screen.lines.text
-    check("11,800" in text and "Box Office Hit" in text,
+    check("11,800" in text and "NYC Tower Lobby" in text and "A" in text,
           "HIGH SCORES reads the best through SaveManager",
           text.splitlines()[0])
     scores_screen.press_back()
