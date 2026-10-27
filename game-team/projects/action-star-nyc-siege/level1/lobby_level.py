@@ -221,25 +221,56 @@ class CollisionWorld:
 # Third-person camera rig
 # ---------------------------------------------------------------------------
 class ThirdPersonCamera:
-    """Follow camera: sits behind/above the player, looks ahead of them.
+    """Over-the-shoulder (OTS) follow camera.
 
-    The session drives it with the player's position and aim yaw/pitch.
-    The camera position is clamped inside the room so walls never swallow
-    it in this interior level (greybox-grade camera collision)."""
+    The camera sits behind/above the player AND offset to the player's
+    RIGHT shoulder (``shoulder`` units along the facing-right vector),
+    looking ahead along a line that carries the same shoulder offset —
+    so the player reads left-of-frame and the crosshair line (the
+    camera's forward) is the honest aim line. The session drives it
+    with the player's position and aim yaw/pitch; the controller reads
+    :meth:`aim_ray` and resolves its hitscan from the camera aim
+    (crosshair), never from the character's feet.
 
-    def __init__(self, distance: float = 7.5, height: float = 2.7,
-                 look_ahead: float = 4.0) -> None:
+    The camera position is clamped inside the room so walls never
+    swallow it in this interior level (greybox-grade camera
+    collision)."""
+
+    # Wall-run camera roll (Cyrus's Unity reference): the frame tilts
+    # toward the wall side — left wall -15 deg, right wall +15 deg —
+    # lerped smoothly in and out.
+    WALLRUN_ROLL_DEG = 15.0
+    ROLL_LERP_RATE = 7.0
+
+    def __init__(self, distance: float = 6.5, height: float = 2.4,
+                 look_ahead: float = 4.0, shoulder: float = 1.15) -> None:
         self.distance = float(distance)
         self.height = float(height)
         self.look_ahead = float(look_ahead)
+        self.shoulder = float(shoulder)
+        self.roll: float = 0.0        # current camera roll (degrees)
+        self._aim_origin: Optional[Vec3] = None
+        self._aim_direction: Optional[Vec3] = None
+
+    @staticmethod
+    def right_from_yaw(yaw_deg: float) -> Vec3:
+        """Unit right vector for a facing yaw (matches main.py)."""
+        fwd = forward_from_yaw(yaw_deg)
+        return Vec3(fwd.z, 0.0, -fwd.x)
 
     def update(self, target_pos: Vec3, yaw_deg: float,
-               pitch_deg: float = 0.0) -> None:
+               pitch_deg: float = 0.0, wall_side: int = 0,
+               dt: float = 1.0 / 60.0) -> None:
+        """``wall_side``: +1 when the player is wall-running with the
+        wall on their facing-right, -1 on their facing-left, 0 when
+        not wall-running — drives the camera roll toward
+        +/-WALLRUN_ROLL_DEG or back to level."""
         fwd = forward_from_yaw(yaw_deg)
+        right = Vec3(fwd.z, 0.0, -fwd.x)
         desired = Vec3(
-            target_pos.x - fwd.x * self.distance,
+            target_pos.x - fwd.x * self.distance + right.x * self.shoulder,
             target_pos.y + self.height + pitch_deg * 0.04,
-            target_pos.z - fwd.z * self.distance,
+            target_pos.z - fwd.z * self.distance + right.z * self.shoulder,
         )
         camera.position = Vec3(
             max(ROOM_MIN_X + 0.6, min(ROOM_MAX_X - 0.6, desired.x)),
@@ -247,11 +278,35 @@ class ThirdPersonCamera:
             max(ROOM_MIN_Z + 0.6, min(ROOM_MAX_Z - 0.6, desired.z)),
         )
         look = Vec3(
-            target_pos.x + fwd.x * self.look_ahead,
+            target_pos.x + fwd.x * self.look_ahead + right.x * self.shoulder,
             target_pos.y + 0.7,
-            target_pos.z + fwd.z * self.look_ahead,
+            target_pos.z + fwd.z * self.look_ahead + right.z * self.shoulder,
         )
         camera.look_at(look)
+        # Wall-run roll: lerp toward the wall side's tilt (or level),
+        # applied on top of the look_at orientation.
+        target_roll = self.WALLRUN_ROLL_DEG * (1 if wall_side > 0
+                                               else -1 if wall_side < 0
+                                               else 0)
+        self.roll += (target_roll - self.roll) \
+            * min(1.0, max(0.0, dt) * self.ROLL_LERP_RATE)
+        if abs(self.roll) > 0.001:
+            camera.rotation_z = self.roll
+        # The aim ray through the crosshair: from the (clamped) camera
+        # position along its true forward after look_at.
+        self._aim_origin = Vec3(camera.position.x, camera.position.y,
+                                camera.position.z)
+        delta = look - camera.position
+        self._aim_direction = delta.normalized() if delta.length() > 1e-6 \
+            else fwd
+
+    def aim_ray(self) -> Optional[Tuple[Vec3, Vec3]]:
+        """(origin, direction) of the crosshair line, from the most
+        recent update(); None before the first update (callers fall
+        back to the character's own aim for that first frame)."""
+        if self._aim_origin is None or self._aim_direction is None:
+            return None
+        return self._aim_origin, self._aim_direction
 
 
 # ---------------------------------------------------------------------------
