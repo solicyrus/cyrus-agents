@@ -49,10 +49,17 @@ STUNT_MATRIX: Dict[str, int] = {
     "slide_shoot": 100,     # shoot & kill an enemy while sliding (takedown slide)
     "air_takedown": 150,    # melee takedown throwing an enemy from window/height
     "wall_run_kill": 200,   # shoot & kill an enemy while wall-running
+    "shield_bypass": 250,   # defeat a shielded Enforcer via slide-under / flank (Stage 3)
+    "defenestration": 500,  # throw an enemy out of the penthouse window (Stage 3)
 }
 
 # Actions that count as enemy kills for Multi-Kill Combo tracking.
-KILL_ACTIONS = frozenset({"slide_shoot", "air_takedown", "wall_run_kill"})
+# shield_bypass and defenestration are kills (an enemy is defeated / thrown
+# out), so they join the Multi-Kill windows exactly like the Stage-1 kills.
+KILL_ACTIONS = frozenset({
+    "slide_shoot", "air_takedown", "wall_run_kill",
+    "shield_bypass", "defenestration",
+})
 
 # --- Combo / variety tuning --------------------------------------------------
 DIVERSITY_WINDOW = 3        # the action must be absent from the last N actions
