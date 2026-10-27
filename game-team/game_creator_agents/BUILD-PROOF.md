@@ -110,3 +110,64 @@ PIPELINE RESULT: STOPPED at the DESIGN stage        exit=1
 - **The QA smoke run needs pygame in the QA environment.** Where pygame is
   absent it reports SKIP with the reason (Proof 5); it was fully exercised
   here via the scratch venv (Proofs 2–4).
+
+---
+
+## Addendum 2026-10-27 (evening) — cross-module consistency gate + rebuild
+
+**Background (first real run, after activation):** the LLM stages went live
+with AGENT_API_KEY set and ran end to end — but QA REJECTED the generated
+"Apple Catcher": `main.py` imported `SCREEN_WIDTH` from `config.py`, which
+never defined it (smoke-run ImportError). Per-module generation had no
+cross-module consistency. The game was not hand-fixed; Cyrus approved fixing
+the developer instead («و اصلاح»).
+
+**The fix (in `game_developer_agent.py`):**
+1. **Context:** each module after the first is now generated with the FULL
+   source of every already-generated module in its prompt, with an explicit
+   instruction (user + system prompt) to import ONLY names that actually
+   exist in those sources, and to define anything missing locally instead.
+2. **Consistency gate (deterministic, AST):** `find_consistency_errors()` /
+   `validate_project_consistency()` run over the whole in-memory project
+   before anything reaches disk. Every `from sibling import X` and every
+   `sibling.Y` attribute use (aliases honoured) must resolve to a name the
+   target module actually defines (assignments, defs, classes, top-level
+   imports). Any miss raises `CodeRejectedError` listing each unresolved
+   name — no partial output is written, and names are never silently
+   patched by the developer itself.
+
+### Proof 7 — the gate, on synthetic pairs (original broken pair reconstructed from the failure record; the first run's /tmp output no longer exists)
+
+```
+CASE 1 (config.py without SCREEN_WIDTH + main.py importing it)
+  errors: ["main.py: imports 'SCREEN_WIDTH' from config.py, but config.py
+            never defines 'SCREEN_WIDTH'"]
+  -> validate_project_consistency raised CodeRejectedError naming SCREEN_WIDTH
+CASE 2 (consistent 3-module project: config + entities + main)
+  errors: []  -> gate passed
+CASE 3 (main.py uses entities.MissCounter, which entities.py never defines)
+  errors: ["main.py: uses 'entities.MissCounter', but entities.py never
+            defines 'MissCounter'"]  -> caught
+GATE PROOF: ALL CASES OK
+```
+
+### Proof 8 — rebuild with the same idea, one run only
+
+```
+$ run_game_builder.py "Catch falling apples in a basket with arrow keys;
+  score for each catch; game over after 3 misses" --out /tmp/apple-catcher-rebuild
+STAGE DESIGN: ok — GDD validated complete: 'Apple Catch Frenzy' (Arcade)
+STAGE BUILD:  config.py (645 B), entities.py (2,974 B), main.py (1,119 B)
+  log: "Cross-module consistency gate passed for 3 modules" (before disk-write)
+STAGE QA: verdict: PASS (0 rejections)
+  [PASS] compile: all 3 Python files compile
+  [PASS] placeholders: no placeholder/stub patterns in 3 files
+  [PASS] smoke_run: main.py exited cleanly (code 0) after 4.95s headless
+  [PASS] perf_sanity: 3 Python files, 4,738 bytes, 173 lines
+PIPELINE RESULT: GAME BUILT AND QA PASSED        exit=0
+```
+
+This also retires the first «نمی‌شه yet» bullet above: the LLM stages are
+now live-proven end to end (design → build → QA), first with a QA rejection
+that exposed a real defect, then — after the developer fix — with a QA PASS
+on the identical idea.
