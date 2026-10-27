@@ -17,7 +17,9 @@ CHAIN RULES (implemented here + pipeline_state.py; documented in both):
 2. TIME BANKING: each floor's TimerManager cap = base target
    (Lobby 90 s / Data Center 75 s / Penthouse 105 s) + the seconds
    banked from the previous floor (banked = max(0, previous effective
-   cap - previous actual)). See pipeline_state.RunState.
+   cap - previous actual)). The APPLIED bonus is capped at +30 s
+   (Cyrus's order, 2026-10-27): effective cap = base + min(banked,
+   30.0); accrual itself is uncapped. See pipeline_state.RunState.
 
 3. HEAL BY RANK (v1 table, Cyrus's "heal based on rank"): at each
    floor's end the floor's own take is rated (floor S_time + the stunt
@@ -74,13 +76,17 @@ Stage-3 archetypes speak richer dialects, so thin adapters translate:
     events and hud_data stay the boss's own).
 
 SEAMS (honest):
-  * phase4/game_entry.launch_stage() is still the per-stage demo
-    hook; wiring the menu's stage start to FullGamePipeline is the
-    entry point's own step. The pipeline emits its final record in
-    exactly the run_record shape VictoryScreen consumes
-    ({stage_id, stage_name, t_actual, t_target, combo_peak, completed,
+  * phase4/game_entry.launch_stage() starts THIS pipeline (wired
+    2026-10-27, Cyrus's final-wiring order): the menu's START GAME and
+    level-select choices construct FullGamePipeline with the entry's
+    real VictoryScreen + shared SaveBridge, and BACK TO MENU returns
+    to the live menu. The pipeline emits its final record in exactly
+    the run_record shape VictoryScreen consumes ({stage_id,
+    stage_name, t_actual, t_target, combo_peak, completed,
     stunt_breakdown}) with stage_id "full_run", and calls
     VictoryScreen.show_result directly when a screen is injected.
+    The full cycle is proven by test_full_cycle.py (see
+    FINAL-CYCLE-REPORT.md).
   * save_system.py is owned by the save-system workstream; see
     pipeline_state.SaveBridge for how absence is handled (logged,
     never faked).
@@ -118,7 +124,7 @@ from logic.stunt_manager import STUNT_MATRIX  # noqa: E402
 from logic.take_rating import TakeResult  # noqa: E402
 from logic.timer_manager import TimerManager  # noqa: E402
 from pipeline_state import (  # noqa: E402
-    FLOORS_BY_NUMBER, FloorRecord, RunState, SaveBridge)
+    BANK_BONUS_CAP_S, FLOORS_BY_NUMBER, FloorRecord, RunState, SaveBridge)
 from stage3.boss_hud import BossHealthBar  # noqa: E402
 from stage3.data_center_level import DataCenterLevel  # noqa: E402
 from stage3.enemy_archetypes import (  # noqa: E402
@@ -309,7 +315,9 @@ class ElevatorTransition:
             f"ELEVATOR — FLOOR {r.level_num} COMPLETE: {r.stage_name.upper()}")
         self.stats_text_value = (
             f"Time ......... {r.t_actual_s:.2f}s / {r.effective_target_s:.1f}s target\n"
-            f"Banked ....... +{r.banked_out_s:.1f}s to the next floor\n"
+            f"Banked ....... +{min(r.banked_out_s, BANK_BONUS_CAP_S):.1f}s "
+            f"to the next floor (applied bonus, cap "
+            f"+{BANK_BONUS_CAP_S:.0f}s)\n"
             f"Floor S_time . {r.s_time:,}\n"
             f"Stunt gained . +{r.stunt_base_gained:,} base "
             f"(run base {r.stunt_base_end:,}, combo x{r.combo_end:.1f})\n"
