@@ -13,8 +13,9 @@ without simulating a mouse):
                      card (rank, cinematic title, S_total breakdown);
                      outcome='game_over' renders the F / "Re-take
                      Required" state. RE-TAKE and BACK TO MENU actions.
-  * HighScoresScreen — per-stage bests from ScoresStore, or an honest
-                     "No takes yet" line per stage when the table is empty.
+  * HighScoresScreen — per-stage bests read through
+                     save_system.SaveManager (project root), or an honest
+                     "No takes yet" line per stage when no record exists.
 """
 
 from __future__ import annotations
@@ -24,10 +25,9 @@ from typing import Callable, Optional
 
 from ursina import Button, Entity, Slider, Text, camera, color, curve, invoke
 
-from phase4.game_settings import (GRAPHICS_LEVELS, RESOLUTIONS, GameSettings,
-                                  apply_graphics, apply_resolution,
-                                  save_settings)
-from phase4.scores_store import STAGES, ScoresStore
+from phase4.game_settings import (GRAPHICS_LEVELS, RESOLUTIONS, STAGES,
+                                  GameSettings, apply_graphics,
+                                  apply_resolution, save_settings)
 
 logger = logging.getLogger(__name__)
 
@@ -288,12 +288,43 @@ class VictoryScreen:
         return bool(self.root.enabled)
 
 
-class HighScoresScreen:
-    """Per-stage bests from ScoresStore; honest 'No takes yet' lines."""
+def _record_fields(record) -> Optional[dict]:
+    """Normalize a SaveManager level record to display fields.
 
-    def __init__(self, store: ScoresStore,
+    SEAM (coordination, 2026-10-27): persistence is owned by
+    save_system.SaveManager at the project root (user_progress.json).
+    The screen reads ONLY through SaveManager.get_level_record(level).
+    That module had not landed when this screen was built, so the exact
+    record key names are normalized here across the plausible spellings
+    (s_total|best_score|score, t_actual|best_time|time, rank, title) —
+    tighten this helper to the real keys when save_system.py lands.
+    """
+    if record is None:
+        return None
+    if isinstance(record, dict):
+        get = record.get
+    else:
+        get = lambda key, default=None: getattr(record, key, default)
+    total = get("s_total", get("best_score", get("score")))
+    if total is None:
+        return None
+    return {
+        "total": int(total),
+        "rank": str(get("rank", "")),
+        "title": str(get("title", "")),
+        "time": float(get("t_actual", get("best_time", get("time", 0.0)))),
+    }
+
+
+class HighScoresScreen:
+    """Per-stage bests read through save_system.SaveManager.
+
+    Honest 'No takes yet' line for any stage without a record.
+    """
+
+    def __init__(self, save_manager=None,
                  on_back: Optional[Callable[[], None]] = None) -> None:
-        self.store = store
+        self.save = save_manager   # a SaveManager, or None -> lazy import
         self.on_back = on_back or (lambda: None)
         self.root = Entity(parent=camera.ui, enabled=False)
         _panel(self.root, scale=(1.2, 0.9))
@@ -304,18 +335,24 @@ class HighScoresScreen:
                      scale=(0.3, 0.06))
         logger.info("HighScoresScreen built")
 
+    def _manager(self):
+        if self.save is None:
+            from save_system import SaveManager  # project-root module
+            self.save = SaveManager()
+        return self.save
+
     def refresh(self) -> None:
-        bests = self.store.all_bests()
+        manager = self._manager()
         rows = []
-        for stage_id, (name, _target) in STAGES.items():
-            best = bests[stage_id]
-            if best is None:
+        for stage_id, (name, target) in STAGES.items():
+            fields = _record_fields(manager.get_level_record(stage_id))
+            if fields is None:
                 rows.append(f"{name.upper():<14} No takes yet")
             else:
                 rows.append(
-                    f"{name.upper():<14} {best.rank}  {best.title}\n"
-                    f"{'':<14} S_total {best.s_total:,}   "
-                    f"Best time {best.t_actual:.1f}s / {best.t_target:.0f}s")
+                    f"{name.upper():<14} {fields['rank']}  {fields['title']}\n"
+                    f"{'':<14} S_total {fields['total']:,}   "
+                    f"Best time {fields['time']:.1f}s / {target:.0f}s")
         self.lines.text = "\n\n".join(rows)
 
     def show(self) -> None:
