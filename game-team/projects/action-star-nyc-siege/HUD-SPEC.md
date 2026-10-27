@@ -8,8 +8,9 @@ points — 150/250/300 — those are NOT approved; the matrix below is).
 
 S_total = S_time + (S_stunt × M_combo)
 
-- **S_time** = 1000 + 20 × remaining_seconds, remaining = max(0, T_target − T_actual).
-  Finishing over target yields the 1000 floor only. (Check: 85s vs 120s target → 1,700.)
+- **S_time** = max(0, (T_target − T_actual) × 100). (Approved final formula, Cyrus
+  2026-10-27 — supersedes the earlier 1000 + 20×remaining draft and the HUD mock's
+  numbers. Check: 85s vs 120s target → 3,500.)
 - **S_stunt** = sum of base points P_i: Bullet Dodge 50 · Slide & Shoot 100 ·
   Air Takedown 150 · Wall-Run Kill 200. Multi-Kill Combo (3 kills < 2s): ×2–×5.
 - **M_combo** = diversity multiplier: +0.5 for each action differing from the last 3,
