@@ -133,3 +133,5 @@ The live HUD layout that presents these values is specified in `HUD-SPEC.md`
 ## Appendix — Tower final structure (approved)
 
 **Tower final structure (Cyrus 2026-10-27): Floor 1 Lobby 90s · Floor 2 Data Center 75s · Floor 3 Penthouse & Helipad 105s (boss).**
+
+- Level 1 (Lobby) target time: 90s — approved by Cyrus 2026-10-27
