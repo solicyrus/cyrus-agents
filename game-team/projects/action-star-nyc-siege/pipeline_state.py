@@ -20,8 +20,12 @@ THE CHAIN RULES (also documented in full_game_pipeline.py):
    floor, where banked = max(0, previous effective target − previous
    actual time) — i.e. TimerManager.remaining at the moment the floor
    ended. Banked seconds are spent into the next floor's cap only;
-   unspent banked seconds bank AGAIN (the rule as specified: each
-   floor's remaining is computed against its effective cap).
+   unspent banked seconds bank AGAIN (each floor's remaining is
+   computed against its effective cap, so accrual is uncapped).
+   APPLIED-BONUS CAP (Cyrus's order, 2026-10-27): the bonus actually
+   applied to a floor's target is capped at +30 s —
+   effective_target = base_target + min(banked_seconds, 30.0).
+   Only the applied bonus is capped; the accrued bank itself is not.
 
 3. HEAL BY RANK (v1 table — Cyrus's rule "heal based on rank"; the
    numbers are v1 and marked as such so they can be re-tuned):
@@ -75,6 +79,11 @@ FLOOR_TABLE = (
 )
 FLOORS_BY_NUMBER = {row[0]: row for row in FLOOR_TABLE}
 MAX_HP = 100.0
+
+# Applied time-bank bonus cap (Cyrus's order, 2026-10-27): no floor's
+# target grows by more than this many banked seconds, however large
+# the accrued bank is. See module docstring, chain rule 2.
+BANK_BONUS_CAP_S = 30.0
 
 # Heal-by-rank v1 table (see module docstring, rule 3). S is a full
 # restore and is handled separately in heal_for_rank().
@@ -170,8 +179,10 @@ class RunState:
 
     # ------------------------------------------------------------- math
     def effective_target(self, base_target_s: float) -> float:
-        """Chain rule 2: base target + banked seconds."""
-        return float(base_target_s) + self.banked_seconds
+        """Chain rule 2: base target + banked seconds, with the
+        applied bonus capped at +BANK_BONUS_CAP_S (30 s)."""
+        return float(base_target_s) + min(self.banked_seconds,
+                                          BANK_BONUS_CAP_S)
 
     def settle_floor(self, *, level_num: int, timer: TimerManager,
                      won: bool, reason: str, hp_end_pre_heal: float,
