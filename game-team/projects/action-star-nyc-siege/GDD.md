@@ -127,3 +127,9 @@ The live HUD layout that presents these values is specified in `HUD-SPEC.md`
 - Rank thresholds in section 7b (S/A/B/C/F point bands) are the designer's proposed formula values; they will be re-tuned once Level 1 is playable and real score ranges are known.
 - Enemy counts per floor, health/damage numbers and weapon stats are not yet fixed — they belong to the Level 1 slice design pass.
 - The stage time cap per floor (the number the Base Time Bonus is measured against) is not yet set numerically.
+
+---
+
+## Appendix — Tower final structure (approved)
+
+**Tower final structure (Cyrus 2026-10-27): Floor 1 Lobby 90s · Floor 2 Data Center 75s · Floor 3 Penthouse & Helipad 105s (boss).**
