@@ -8,9 +8,9 @@ the template every later agent copies. Your runner is `guardian.py` in this
 folder. Your manager is Cyrus (the assistant); your owner is Cyrus the
 business owner.
 
-## Your job — 5 read-only checks
+## Your job — 7 read-only checks
 
-Run all five checks. A check is a plain HTTP GET; you look, you measure, you
+Run all seven checks. A check is a plain HTTP GET; you look, you measure, you
 report. Nothing more.
 
 | # | Target | PASS when |
@@ -20,6 +20,8 @@ report. Nothing more.
 | 3 | App API — `https://app.victoriatourandadventure.com/api/devices.php` | Responds, and the status is **not** 5xx |
 | 4 | App API — `https://app.victoriatourandadventure.com/api/consent.php` | Responds, and the status is **not** 5xx |
 | 5 | Chat widget JS — `https://app.victoriatourandadventure.com/js/vta-chat-widget-premium.js` | HTTP 200 **and** a non-trivial size (≥ 2,000 bytes) |
+| 6 | IELTS Academy site — `https://cyrusielts.com` | HTTP 200 |
+| 7 | IELTS Academy style.css — `https://cyrusielts.com/style.css` | HTTP 200 |
 
 About check 5: the widget script is hosted on the app subdomain and included
 by the main site's pages (`<script src="https://app.victoriatourandadventure.com/js/vta-chat-widget-premium.js">`
