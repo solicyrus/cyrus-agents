@@ -17,28 +17,39 @@ were fixed and re-proven (listed at the bottom).
   sfx_glass_break, sfx_melee_hit, sfx_server_explosion, ui_charge,
   ui_combo, ui_rank — all synthesized v1 (numpy), zero licensed audio.
 
-## 2. Scores store — test_scores_store.py — ALL PASS (7 checks, exit 0)
+## 2. High Scores persistence — owned by save_system (coordination)
 
-Write → read round-trip preserves every field (S_total, rank, title,
-S_time, stunt_base, combo, t_actual, t_target); a lower take does not
-replace the best, a higher one does; unknown stage raises ValueError;
-empty store reports None per stage. Store file lives in the user-data
-folder via user_data_path() — never inside the bundle.
+Per the 2026-10-27 coordination note, persistence moved OUT of Phase 4
+to the save-system workstream (`save_system.SaveManager`,
+user_progress.json) and stage selection to `level_select.
+LevelSelectMenu`. The Phase-4-owned scores store built earlier the
+same day was **removed** (local + repo) in favour of that single
+system. The High Scores screen now reads only through
+`SaveManager.get_level_record(level)` and STAGE SELECT opens the
+attached LevelSelectMenu; both seams are exercised in the smoke test
+below against faithful doubles of the contracted interfaces, because
+save_system.py / level_select.py had **not landed yet** (verified 404
+on the repo at build time). The screen normalizes plausible record key
+spellings (s_total|best_score|score, t_actual|best_time|time) — see
+`_record_fields()` in game_ui_screens.py; tighten it when the real
+module lands. INTERFACE STATUS: seam coded + contract-tested; real
+integration pending the other workstream.
 
 ## 3. Menu + screens smoke — test_menu_smoke.py — 23/23 PASS (exit 0)
 
 Real Ursina UI driven programmatically under xvfb (175 frames):
-menu → HIGH SCORES (empty table honestly shows "No takes yet") →
-SETTINGS (BGM slider applies live to settings + SoundManager;
-resolution selector applies; graphics Low → vsync off; key-guide lists
-the real controls incl. L-SHIFT Bullet Time) → take recorded →
-HIGH SCORES lists "A · Box Office Hit · 11,800" → VICTORY card shows
-rank A / "Box Office Hit" with breakdown S_time 3,500 and S_total
-11,800 → RE-TAKE fires with stage id → BACK TO MENU → F total (900)
-renders GAME OVER / "Re-take Required", and an unfinished run renders
-Game Over even with a good score → SFX/UI clips construct → Bullet
-Time switches the mix to 0.4x variants and restores 1.0x → START GAME
-launches Lobby, STAGE SELECT launches Penthouse.
+menu → HIGH SCORES (no records → honest "No takes yet") → SETTINGS
+(BGM slider applies live to settings + SoundManager; resolution
+selector applies; graphics Low → vsync off; key-guide lists the real
+controls incl. L-SHIFT Bullet Time) → a record appears through the
+SaveManager double → HIGH SCORES lists "A · Box Office Hit · 11,800" →
+VICTORY card shows rank A / "Box Office Hit" with breakdown S_time
+3,500 and S_total 11,800 → RE-TAKE fires with stage id → BACK TO MENU
+→ F total (900) renders GAME OVER / "Re-take Required", and an
+unfinished run renders Game Over even with a good score → SFX/UI
+clips construct → Bullet Time switches the mix to 0.4x variants and
+restores 1.0x → STAGE SELECT opens the (double) LevelSelectMenu, its
+choice starts the Penthouse → START GAME launches the Lobby.
 
 ## 4. Packaging — build_executable.py (Linux)
 
