@@ -51,16 +51,16 @@ logger = logging.getLogger(__name__)
 # Palette — the approved look: near-black tactical, gold-free, skin head,
 # darker-still hands (fingerless gloves read as black blocks at this scale).
 # ---------------------------------------------------------------------------
-COL_TACTICAL = color.rgb(24, 26, 34)      # torso / sleeves
-COL_TROUSERS = color.rgb(17, 18, 23)      # legs
-COL_VEST = color.rgb(40, 44, 56)          # chest plate
-COL_SKIN = color.rgb(216, 166, 122)       # head
-COL_HAIR = color.rgb(28, 22, 18)
-COL_GLOVE = color.rgb(10, 10, 12)         # fingerless-glove hands
-COL_HOLSTER = color.rgb(12, 12, 15)       # thigh holsters
-COL_GUN = color.rgb(16, 16, 20)
-COL_BOOT = color.rgb(14, 14, 17)
-COL_BELT = color.rgb(52, 44, 30)
+COL_TACTICAL = color.rgb32(24, 26, 34)      # torso / sleeves
+COL_TROUSERS = color.rgb32(17, 18, 23)      # legs
+COL_VEST = color.rgb32(40, 44, 56)          # chest plate
+COL_SKIN = color.rgb32(216, 166, 122)       # head
+COL_HAIR = color.rgb32(28, 22, 18)
+COL_GLOVE = color.rgb32(10, 10, 12)         # fingerless-glove hands
+COL_HOLSTER = color.rgb32(12, 12, 15)       # thigh holsters
+COL_GUN = color.rgb32(16, 16, 20)
+COL_BOOT = color.rgb32(14, 14, 17)
+COL_BELT = color.rgb32(52, 44, 30)
 
 POSES = ("IDLE", "RUN", "AIM", "SLIDE", "MELEE", "WALLRUN", "DODGE")
 
