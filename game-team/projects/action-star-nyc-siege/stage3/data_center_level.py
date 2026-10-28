@@ -64,18 +64,18 @@ SPRINKLER_VISIBILITY = 0.55   # visibility_factor while the zone is wet
 DROPLETS_PER_ZONE = 40
 
 # Palette — cool steel/glass data floor with hot rack accents.
-COL_FLOOR = color.rgb(52, 56, 64)
-COL_WALL = color.rgb(104, 112, 124)
-COL_RACK = color.rgb(38, 42, 52)
-COL_RACK_FACE = color.rgb(24, 140, 130)
-COL_RACK_BURNT = color.rgb(16, 16, 18)
-COL_GLASS_SMOKED = color.rgba(52, 66, 80, 110)
-COL_DESK_WOOD = color.rgb(116, 84, 54)
-COL_PLASTER = color.rgb(178, 172, 158)
-COL_SCREEN = color.rgb(120, 220, 255)
-COL_CEILING = color.rgb(40, 42, 48)
-COL_SPARK = color.rgb(255, 214, 90)
-COL_WATER = color.rgba(140, 180, 230, 120)
+COL_FLOOR = color.rgb32(52, 56, 64)
+COL_WALL = color.rgb32(104, 112, 124)
+COL_RACK = color.rgb32(38, 42, 52)
+COL_RACK_FACE = color.rgb32(24, 140, 130)
+COL_RACK_BURNT = color.rgb32(16, 16, 18)
+COL_GLASS_SMOKED = color.rgba32(52, 66, 80, 110)
+COL_DESK_WOOD = color.rgb32(116, 84, 54)
+COL_PLASTER = color.rgb32(178, 172, 158)
+COL_SCREEN = color.rgb32(120, 220, 255)
+COL_CEILING = color.rgb32(40, 42, 48)
+COL_SPARK = color.rgb32(255, 214, 90)
+COL_WATER = color.rgba32(140, 180, 230, 120)
 
 
 class ServerRack:
@@ -128,7 +128,7 @@ class ServerRack:
         """The electric shock: stun every registered enemy in radius."""
         self.discharged = True
         self.entity.color = COL_RACK_BURNT
-        self._face.color = color.rgb(30, 30, 30)
+        self._face.color = color.rgb32(30, 30, 30)
         self.level.spawn_sparks(self.entity.position, count=10)
         stunned: List[str] = []
         origin = Vec3(self.entity.x, 0.0, self.entity.z)
@@ -284,12 +284,12 @@ class DataCenterLevel:
     def _build_lights(self) -> None:
         key = DirectionalLight(shadows=False)
         key.rotation = (52, -18, 0)
-        key.color = color.rgb(200, 216, 255)
+        key.color = color.rgb32(200, 216, 255)
         fill = AmbientLight()
-        fill.color = color.rgb(58, 64, 78)
+        fill.color = color.rgb32(58, 64, 78)
         strip = PointLight()
         strip.position = (0, 5.2, 0)
-        strip.color = color.rgb(150, 200, 255)
+        strip.color = color.rgb32(150, 200, 255)
         strip.range = 36
         self.entities.extend([key, fill, strip])
 
