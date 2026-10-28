@@ -100,7 +100,7 @@ class _ArchetypeBase:
         self.state = "down"
         self.entity.rotation_z = 88
         self.entity.y = 0.5
-        self.entity.color = color.rgb(70, 36, 36)
+        self.entity.color = color.rgb32(70, 36, 36)
         logger.info("%s is DOWN (%s)", self.name, source)
 
     def _face(self, target: Vec3) -> None:
@@ -146,12 +146,12 @@ class EnforcerEnemy(_ArchetypeBase):
                  facing_yaw: float = 0.0,
                  rng: Optional[random.Random] = None) -> None:
         super().__init__(world, name, pos, ENFORCER_MAX_HP,
-                         color.rgb(52, 62, 92), scale=(1.1, 1.95, 1.1),
+                         color.rgb32(52, 62, 92), scale=(1.1, 1.95, 1.1),
                          facing_yaw=facing_yaw)
         self.rng = rng or random.Random(7)
         self.shield = Entity(model="cube", scale=(1.35, 1.65, 0.16),
                              position=(0, 0.05, 0.68), parent=self.entity,
-                             color=color.rgb(30, 34, 44), shader=LIT)
+                             color=color.rgb32(30, 34, 44), shader=LIT)
         self._shield_flash_ttl = 0.0
         self.blocked_shots = 0
         self._next_shot_at = 0.8
@@ -212,8 +212,8 @@ class EnforcerEnemy(_ArchetypeBase):
         self._now += dt
         if self._shield_flash_ttl > 0:
             self._shield_flash_ttl -= dt
-            self.shield.color = color.rgb(120, 140, 170) \
-                if self._shield_flash_ttl > 0 else color.rgb(30, 34, 44)
+            self.shield.color = color.rgb32(120, 140, 170) \
+                if self._shield_flash_ttl > 0 else color.rgb32(30, 34, 44)
         if self.is_stunned or not player_alive:
             return
         self._face(player_pos)
@@ -265,7 +265,7 @@ class MarksmanEnemy(_ArchetypeBase):
     def __init__(self, world: CollisionWorld, name: str, pos: Vec3,
                  facing_yaw: float = 0.0) -> None:
         super().__init__(world, name, pos, MARKSMAN_MAX_HP,
-                         color.rgb(40, 44, 54), scale=(0.85, 1.85, 0.85),
+                         color.rgb32(40, 44, 54), scale=(0.85, 1.85, 0.85),
                          facing_yaw=facing_yaw)
         self.lock_progress = 0.0
         self._refire_until = 0.0
@@ -276,7 +276,7 @@ class MarksmanEnemy(_ArchetypeBase):
         self.damage_sink = None
         # The laser: a thin red beam, hidden until he paints a target.
         self.laser_entity = Entity(model="cube", scale=(0.035, 0.035, 1.0),
-                                   color=color.rgb(255, 40, 40),
+                                   color=color.rgb32(255, 40, 40),
                                    enabled=False)
         self._tracer_ttl = 0.0
         self._tracer: Optional[Entity] = None
@@ -341,7 +341,7 @@ class MarksmanEnemy(_ArchetypeBase):
                         scale=(0.05, 0.05,
                                max(0.1, (chest - muzzle).length())),
                         position=(muzzle + chest) / 2,
-                        color=color.rgb(255, 120, 90))
+                        color=color.rgb32(255, 120, 90))
         tracer.look_at(chest)
         self._tracer = tracer
         self._tracer_ttl = 0.09
@@ -372,7 +372,7 @@ class SmokeCloud:
     def __init__(self, position: Vec3, ttl: float = SMOKE_TTL_S) -> None:
         self.entity = Entity(model="sphere", scale=SMOKE_RADIUS * 2,
                              position=position,
-                             color=color.rgba(120, 120, 128, 110))
+                             color=color.rgba32(120, 120, 128, 110))
         self.entity.alpha = 0.45
         self.ttl = float(ttl)
 
@@ -400,7 +400,7 @@ class BossEnemy(_ArchetypeBase):
                  cover_points: List[Vec3],
                  rng: Optional[random.Random] = None) -> None:
         super().__init__(world, name, pos, BOSS_MAX_HP,
-                         color.rgb(24, 24, 30), scale=(1.05, 2.0, 1.05))
+                         color.rgb32(24, 24, 30), scale=(1.05, 2.0, 1.05))
         if not cover_points:
             raise ValueError("the boss needs at least one cover point")
         self.cover_points = [Vec3(p.x, pos.y, p.z) for p in cover_points]
