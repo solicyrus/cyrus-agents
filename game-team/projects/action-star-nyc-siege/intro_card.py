@@ -28,10 +28,10 @@ from ursina import Button, Entity, Text, camera, color  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
-GOLD = color.rgb(201, 162, 39)
-NAVY = color.rgb(11, 20, 38)
+GOLD = color.rgb32(201, 162, 39)
+NAVY = color.rgb32(11, 20, 38)
 WHITE = color.white
-DIM = color.rgb(170, 182, 200)
+DIM = color.rgb32(170, 182, 200)
 
 TITLE_TEXT = "THE ACTION STAR"
 BODY_TEXT = (
