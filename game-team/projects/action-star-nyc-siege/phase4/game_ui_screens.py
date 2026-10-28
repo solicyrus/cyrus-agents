@@ -31,11 +31,11 @@ from phase4.game_settings import (GRAPHICS_LEVELS, RESOLUTIONS, STAGES,
 
 logger = logging.getLogger(__name__)
 
-NAVY = color.rgb(11, 36, 64)
-NAVY_LIGHT = color.rgb(18, 52, 92)
-GOLD = color.rgb(201, 162, 39)
+NAVY = color.rgb32(11, 36, 64)
+NAVY_LIGHT = color.rgb32(18, 52, 92)
+GOLD = color.rgb32(201, 162, 39)
 WHITE = color.white
-DIM = color.rgb(170, 182, 200)
+DIM = color.rgb32(170, 182, 200)
 
 # The game's real controls — copied from level1/main.py (the shipped
 # input mapping), shown verbatim in the settings key-guide panel.
@@ -241,7 +241,7 @@ class VictoryScreen:
         if self.outcome == "game_over":
             self.heading.text = "GAME OVER"
             self.rank_text.text = "F"
-            self.rank_text.color = color.rgb(200, 60, 50)
+            self.rank_text.color = color.rgb32(200, 60, 50)
             self.title_text.text = "Re-take Required"
         else:
             self.heading.text = f"TAKE COMPLETE — {stage_name.upper()}"
