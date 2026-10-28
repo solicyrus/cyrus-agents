@@ -49,17 +49,17 @@ WALL_HEIGHT = 6.0
 WALL_THICKNESS = 1.0
 
 # Palette — warm marble lobby with cool glass/steel accents.
-COL_FLOOR = color.rgb(96, 88, 78)
-COL_WALL = color.rgb(150, 138, 120)
-COL_MARBLE = color.rgb(196, 188, 172)
-COL_DESK = color.rgb(84, 62, 44)
-COL_PLANTER = color.rgb(52, 84, 52)
-COL_GLASS = color.rgba(140, 190, 225, 90)
-COL_STEEL = color.rgb(120, 128, 140)
-COL_GOLD = color.rgb(198, 158, 60)
-COL_RUG = color.rgb(96, 30, 36)
-COL_CEILING = color.rgb(60, 58, 62)
-COL_LIGHT_PANEL = color.rgb(255, 236, 190)
+COL_FLOOR = color.rgb32(96, 88, 78)
+COL_WALL = color.rgb32(150, 138, 120)
+COL_MARBLE = color.rgb32(196, 188, 172)
+COL_DESK = color.rgb32(84, 62, 44)
+COL_PLANTER = color.rgb32(52, 84, 52)
+COL_GLASS = color.rgba32(140, 190, 225, 90)
+COL_STEEL = color.rgb32(120, 128, 140)
+COL_GOLD = color.rgb32(198, 158, 60)
+COL_RUG = color.rgb32(96, 30, 36)
+COL_CEILING = color.rgb32(60, 58, 62)
+COL_LIGHT_PANEL = color.rgb32(255, 236, 190)
 
 
 def forward_from_yaw(yaw_deg: float) -> Vec3:
@@ -435,16 +435,16 @@ class LobbyLevel:
         """Cinematic rig: warm key, cool fill, two practical points."""
         key = DirectionalLight(shadows=False)
         key.rotation = (48, -32, 0)
-        key.color = color.rgb(255, 216, 175)
+        key.color = color.rgb32(255, 216, 175)
         fill = AmbientLight()
-        fill.color = color.rgb(72, 82, 104)
+        fill.color = color.rgb32(72, 82, 104)
         warm = PointLight()
         warm.position = (0, 5.0, -2)
-        warm.color = color.rgb(255, 190, 130)
+        warm.color = color.rgb32(255, 190, 130)
         warm.range = 34
         cool = PointLight()
         cool.position = (0, 4.4, 12.5)
-        cool.color = color.rgb(140, 180, 255)
+        cool.color = color.rgb32(140, 180, 255)
         cool.range = 22
         self.entities.extend([key, fill, warm, cool])
 
