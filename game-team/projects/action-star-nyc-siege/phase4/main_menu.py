@@ -68,10 +68,10 @@ class MainMenuState:
     def _build_backdrop(self) -> None:
         root = self.world_root
         Entity(parent=root, model="cube", scale=(90, 0.5, 90),
-               position=(0, -0.25, 10), color=color.rgb(52, 55, 64))
+               position=(0, -0.25, 10), color=color.rgb32(52, 55, 64))
         # Hero tower straight ahead, windows as thin emissive planes.
         tower = Entity(parent=root, model="cube", scale=(10, 34, 10),
-                       position=(0, 17, 26), color=color.rgb(30, 34, 44))
+                       position=(0, 17, 26), color=color.rgb32(30, 34, 44))
         for row in range(9):
             for col in range(4):
                 if (row * 4 + col) % 3 == 0:
@@ -79,15 +79,15 @@ class MainMenuState:
                 Entity(parent=tower, model="quad",
                        scale=(0.14, 0.07), rotation_y=180,
                        position=(-0.36 + col * 0.24, -0.42 + row * 0.1, -0.51),
-                       color=color.rgb(255, 196, 92))
+                       color=color.rgb32(255, 196, 92))
         for i, (x, z, h) in enumerate(((-13, 20, 20), (12, 30, 26),
                                        (-9, 36, 14), (15, 14, 11))):
             Entity(parent=root, model="cube", scale=(6, h, 6),
                    position=(x, h / 2, z),
-                   color=color.rgb(38 + i * 6, 42 + i * 5, 54 + i * 4))
+                   color=color.rgb32(38 + i * 6, 42 + i * 5, 54 + i * 4))
         # Street glow strip leading to the tower doors.
         Entity(parent=root, model="cube", scale=(3, 0.06, 18),
-               position=(0, 0.03, 8), color=color.rgb(90, 78, 40))
+               position=(0, 0.03, 8), color=color.rgb32(90, 78, 40))
 
     # ------------------------------------------------------------------ UI
     def _build_ui(self) -> None:
