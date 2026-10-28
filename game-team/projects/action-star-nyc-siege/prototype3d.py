@@ -59,11 +59,11 @@ app = Ursina(title="Action Star: NYC Siege 3D — prototype", vsync=False)
 
 # Tower floor slab + a few skyscraper blocks to give the space depth.
 ground = Entity(model="cube", scale=(60, 0.5, 60), position=(0, -0.25, 0),
-                color=color.rgb(70, 74, 84))
+                color=color.rgb32(70, 74, 84))
 for i, (x, z, h) in enumerate([(-10, 10, 9), (8, 14, 13), (-14, -6, 6),
                                (12, -10, 11), (0, 22, 16)]):
     Entity(model="cube", scale=(5, h, 5), position=(x, h / 2, z),
-           color=color.rgb(52 + i * 9, 56 + i * 7, 68 + i * 6))
+           color=color.rgb32(52 + i * 9, 56 + i * 7, 68 + i * 6))
 
 # The player (stand-in cube for the action star) and the exit pad (win zone).
 player = Entity(model="cube", scale=(1, 1.8, 1), position=(0, 0.9, -14),
