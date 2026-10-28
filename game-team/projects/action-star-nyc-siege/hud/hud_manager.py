@@ -39,12 +39,12 @@ FEED_RISE = 0.15            # UI units an entry rises over its lifetime
 FEED_LINE_HEIGHT = 0.052    # vertical spacing between stacked feed entries
 FEED_BASE_Y = -0.30         # bottom-center feed anchor
 
-HP_COLOR_HIGH = color.rgb(64, 200, 90)
-HP_COLOR_MID = color.rgb(240, 190, 40)
-HP_COLOR_LOW = color.rgb(230, 60, 50)
-BAR_BACK_COLOR = color.rgba(10, 10, 14, 170)
-BULLET_COLOR = color.rgb(50, 170, 255)
-BULLET_READY_COLOR = color.rgb(255, 205, 40)
+HP_COLOR_HIGH = color.rgb32(64, 200, 90)
+HP_COLOR_MID = color.rgb32(240, 190, 40)
+HP_COLOR_LOW = color.rgb32(230, 60, 50)
+BAR_BACK_COLOR = color.rgba32(10, 10, 14, 170)
+BULLET_COLOR = color.rgb32(50, 170, 255)
+BULLET_READY_COLOR = color.rgb32(255, 205, 40)
 
 # Spec icons for the stunt feed (HUD-SPEC.md shows exactly these two).
 ACTION_ICONS = {
