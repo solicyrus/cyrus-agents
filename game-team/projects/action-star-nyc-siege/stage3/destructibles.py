@@ -32,7 +32,7 @@ from level1.lobby_level import LIT, CollisionWorld, Solid  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
-COL_RUBBLE = color.rgb(105, 96, 86)
+COL_RUBBLE = color.rgb32(105, 96, 86)
 
 
 class DestructibleCover:
