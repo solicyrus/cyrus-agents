@@ -629,7 +629,7 @@ class PlayerController:
         mid = (start + end) / 2
         length = (end - start).length()
         tracer = Entity(model="cube", scale=(0.035, 0.035, max(0.1, length)),
-                        position=mid, color=color.rgb(255, 220, 120))
+                        position=mid, color=color.rgb32(255, 220, 120))
         tracer.look_at(end)
         self._tracers.append({"entity": tracer, "ttl": 0.06})
         self.tracers_spawned += 1
