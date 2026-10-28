@@ -63,17 +63,17 @@ WIND_AGAINST_FACTOR = 0.62      # moving straight against the wind
 WIND_WITH_FACTOR = 1.38         # moving straight with it
 
 # Palette — warm luxury against a night-blue city glass line.
-COL_FLOOR = color.rgb(74, 62, 50)
-COL_WALL = color.rgb(128, 112, 92)
-COL_GLASS = color.rgba(150, 200, 235, 90)
-COL_GOLD = color.rgb(198, 158, 60)
-COL_POOL = color.rgba(70, 150, 220, 120)
-COL_POOL_RIM = color.rgb(210, 200, 180)
-COL_STAIRS = color.rgb(96, 80, 64)
-COL_HELIPAD = color.rgb(58, 60, 66)
-COL_DESK_WOOD = color.rgb(116, 84, 54)
-COL_PLASTER = color.rgb(178, 172, 158)
-COL_CITY = color.rgb(28, 36, 60)
+COL_FLOOR = color.rgb32(74, 62, 50)
+COL_WALL = color.rgb32(128, 112, 92)
+COL_GLASS = color.rgba32(150, 200, 235, 90)
+COL_GOLD = color.rgb32(198, 158, 60)
+COL_POOL = color.rgba32(70, 150, 220, 120)
+COL_POOL_RIM = color.rgb32(210, 200, 180)
+COL_STAIRS = color.rgb32(96, 80, 64)
+COL_HELIPAD = color.rgb32(58, 60, 66)
+COL_DESK_WOOD = color.rgb32(116, 84, 54)
+COL_PLASTER = color.rgb32(178, 172, 158)
+COL_CITY = color.rgb32(28, 36, 60)
 
 
 class WindowPane:
@@ -233,7 +233,7 @@ class PenthouseLevel:
             mote = Entity(model="cube", scale=0.09,
                           position=(-20 + (i * 1.7) % 40, ROOF_Y + 0.8,
                                     9.0 + (i % 5) * 1.6),
-                          color=color.rgb(200, 190, 170))
+                          color=color.rgb32(200, 190, 170))
             self._dust.append(mote)
             self.entities.append(mote)
 
@@ -251,16 +251,16 @@ class PenthouseLevel:
     def _build_lights(self) -> None:
         key = DirectionalLight(shadows=False)
         key.rotation = (40, 25, 0)
-        key.color = color.rgb(255, 224, 180)
+        key.color = color.rgb32(255, 224, 180)
         fill = AmbientLight()
-        fill.color = color.rgb(66, 74, 96)
+        fill.color = color.rgb32(66, 74, 96)
         chandelier = PointLight()
         chandelier.position = (0, 6.2, -2)
-        chandelier.color = color.rgb(255, 196, 130)
+        chandelier.color = color.rgb32(255, 196, 130)
         chandelier.range = 38
         roof_wash = PointLight()
         roof_wash.position = (0, ROOF_Y + 3.5, 12)
-        roof_wash.color = color.rgb(150, 180, 255)
+        roof_wash.color = color.rgb32(150, 180, 255)
         roof_wash.range = 24
         self.entities.extend([key, fill, chandelier, roof_wash])
 
