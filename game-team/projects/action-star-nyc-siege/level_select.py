@@ -30,10 +30,10 @@ from save_system import LEVEL_TITLES, SaveManager  # noqa: E402
 logger = logging.getLogger(__name__)
 
 CARD_POSITIONS = {1: -0.46, 2: 0.0, 3: 0.46}
-CARD_COLOR = color.rgb(24, 42, 74)        # deep navy, house palette
-CARD_COLOR_HOVER = color.rgb(46, 74, 122)
-LOCKED_COLOR = color.rgb(52, 54, 62)
-GOLD = color.rgb(201, 162, 39)
+CARD_COLOR = color.rgb32(24, 42, 74)        # deep navy, house palette
+CARD_COLOR_HOVER = color.rgb32(46, 74, 122)
+LOCKED_COLOR = color.rgb32(52, 54, 62)
+GOLD = color.rgb32(201, 162, 39)
 
 
 class LevelSelectMenu:
