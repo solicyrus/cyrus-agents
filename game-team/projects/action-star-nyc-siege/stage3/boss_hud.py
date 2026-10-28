@@ -42,18 +42,18 @@ class BossHealthBar:
 
         self._name_text = Text(
             text="", parent=camera.ui, position=(0, 0.462),
-            origin=(0, 0), scale=1.35, color=color.rgb(255, 205, 90),
+            origin=(0, 0), scale=1.35, color=color.rgb32(255, 205, 90),
             enabled=False)
         self._bg = Entity(parent=camera.ui, model="quad",
                           scale=(BAR_FULL_WIDTH + 0.04, 0.052),
                           position=(0, BAR_Y),
-                          color=color.rgb(18, 18, 24), enabled=False)
+                          color=color.rgb32(18, 18, 24), enabled=False)
         # Fill anchored on its left edge: scale_x shrinks with HP.
         self._fill = Entity(parent=camera.ui, model="quad",
                             scale=(BAR_FULL_WIDTH, 0.036),
                             position=(-BAR_FULL_WIDTH / 2, BAR_Y),
                             origin=(-0.5, 0),
-                            color=color.rgb(205, 42, 42), enabled=False)
+                            color=color.rgb32(205, 42, 42), enabled=False)
         self._hp_text = Text(
             text="", parent=camera.ui, position=(0, BAR_Y),
             origin=(0, 0), scale=0.95, color=color.white, enabled=False)
@@ -116,9 +116,9 @@ class BossHealthBar:
         self.displayed_fraction = frac
         self._fill.scale_x = BAR_FULL_WIDTH * frac
         # Phase darkening: the bar reddens as the boss enrages.
-        self._fill.color = (color.rgb(205, 42, 42) if data["phase"] == 1
-                            else color.rgb(225, 84, 30) if data["phase"] == 2
-                            else color.rgb(255, 120, 20))
+        self._fill.color = (color.rgb32(205, 42, 42) if data["phase"] == 1
+                            else color.rgb32(225, 84, 30) if data["phase"] == 2
+                            else color.rgb32(255, 120, 20))
         self._name_text.text = f"{data['name']} — PHASE {data['phase']}"
         self._hp_text.text = (f"{data['hp']:.0f} / {data['max_hp']:.0f} HP")
         self._set_visible(True)
