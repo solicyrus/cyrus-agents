@@ -39,7 +39,7 @@ app = Ursina(title="Action Star — HUD smoke", vsync=False)
 
 # Minimal scene so a real frame is rendered behind the HUD.
 Entity(model="cube", scale=(30, 0.5, 30), position=(0, -0.25, 0),
-       color=color.rgb(70, 74, 84))
+       color=color.rgb32(70, 74, 84))
 Entity(model="cube", scale=(1, 1.8, 1), position=(0, 0.9, -6),
        color=color.orange)
 
