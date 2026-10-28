@@ -81,14 +81,14 @@ class Guard:
 
         start = self.patrol_points[0]
         self.entity = Entity(model="cube", scale=(0.9, 1.8, 0.9),
-                             position=start, color=color.rgb(178, 44, 44),
+                             position=start, color=color.rgb32(178, 44, 44),
                              shader=LIT)
         self._visor = Entity(model="cube", scale=(0.6, 0.18, 0.2),
                              position=(0, 1.15, 0.42), parent=self.entity,
-                             color=color.rgb(30, 30, 36), shader=LIT)
+                             color=color.rgb32(30, 30, 36), shader=LIT)
         self._gun = Entity(model="cube", scale=(0.16, 0.16, 0.7),
                            position=(0.42, 0.35, 0.4), parent=self.entity,
-                           color=color.rgb(24, 24, 28), shader=LIT)
+                           color=color.rgb32(24, 24, 28), shader=LIT)
 
         self.hp: float = GUARD_MAX_HP
         self.alive: bool = True
@@ -127,7 +127,7 @@ class Guard:
             self.state = "down"
             self.entity.rotation_z = 88
             self.entity.y = 0.45
-            self.entity.color = color.rgb(90, 40, 40)
+            self.entity.color = color.rgb32(90, 40, 40)
             logger.info("Guard %s is DOWN", self.name)
             return True
         # Getting shot instantly alerts the guard.
@@ -292,7 +292,7 @@ class BulletManager:
 
     def spawn(self, origin: Vec3, velocity: Vec3, shooter: str) -> None:
         ent = Entity(model="sphere", scale=0.22, position=origin,
-                     color=color.rgb(255, 210, 90))
+                     color=color.rgb32(255, 210, 90))
         self.bullets.append(_Bullet(ent, velocity, shooter))
         self.total_spawned += 1
 
