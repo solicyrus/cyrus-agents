@@ -283,8 +283,8 @@ class ElevatorTransition:
         self.duration_s = float(duration_s)
         self.root = Entity(parent=camera.ui, enabled=False)
         self._backdrop = Entity(parent=self.root, model="quad",
-                                scale=(2.2, 1.3), color=color.rgb(8, 8, 12))
-        door_color = color.rgb(70, 74, 86)
+                                scale=(2.2, 1.3), color=color.rgb32(8, 8, 12))
+        door_color = color.rgb32(70, 74, 86)
         self._door_left = Entity(parent=self.root, model="quad",
                                  scale=(0.56, 1.06), position=(-0.28, 0, 0),
                                  color=door_color)
@@ -293,7 +293,7 @@ class ElevatorTransition:
                                   color=door_color)
         self._panel = Entity(parent=self.root, model="quad",
                              scale=(1.02, 0.66), position=(0, 0, -0.01),
-                             color=color.rgb(14, 18, 30))
+                             color=color.rgb32(14, 18, 30))
         self._panel.alpha = 0.92
         self.title_text = Text(parent=self.root, text="", position=(0, 0.27),
                                origin=(0, 0), scale=2.0, color=color.yellow)
@@ -496,7 +496,7 @@ class FloorSession:
         pad = Entity(model="quad", scale=(x1 - x0, z1 - z0, 1.0),
                      rotation_x=90,
                      position=((x0 + x1) / 2, 0.06, (z0 + z1) / 2),
-                     color=color.rgb(198, 158, 60))
+                     color=color.rgb32(198, 158, 60))
         level.entities.append(pad)
         self.goal_check = lambda: (
             x0 <= self.player.position.x <= x1
